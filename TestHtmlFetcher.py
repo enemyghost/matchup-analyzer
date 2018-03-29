@@ -1,4 +1,5 @@
 import unittest
+import html-fetcher
 
 class TestHtmlFetcher(unittest.TestCase):
     def test(self):
