@@ -11,9 +11,9 @@ class SoupFactory(object):
         return bs(raw_html, self.parser)
 
 
+
 class HtmlParser(object):
     """Parses html soup for html_tag and optional class:value dict"""
-
     def __init__(self, html_tag="tbody", class_dict={}, parser='lxml'):
         self.html_tag = html_tag
         self.class_dict = class_dict
@@ -44,7 +44,6 @@ def is_deepest_table(table_soup, html_tag, class_dict):
         return True
     return False
 
-
 def to_game_data(table_list):
     """Extracts game data from table and returns created GameData object"""
     teams = table_list[0][0][0].split(' @ ')
@@ -71,8 +70,3 @@ def create_dict(table_list):
             sportsbook_name = table[0][0][:-15].strip()
         line_dict[sportsbook_name] = np.array(table[2:])
     return line_dict
-
-
-
-
-
