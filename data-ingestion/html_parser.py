@@ -20,7 +20,6 @@ class HtmlParser(object):
         find_tables = soup.find_all(self.html_tag, self.class_dict)
         data_out = []
         for table in find_tables:
-            table_data = []
             if is_deepest_table(table, self.html_tag, self.class_dict):
                 rows = table.find_all('tr')
                 for row in rows:
@@ -35,9 +34,4 @@ def is_deepest_table(table_soup, html_tag, class_dict):
     if len(table_soup.find_all(html_tag, class_dict)) == 0:
         return True
     return False
-
-
-
-
-
 
