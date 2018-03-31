@@ -10,8 +10,6 @@ class SoupFactory(object):
     def get(self, raw_html):
         return bs(raw_html, self.parser)
 
-
-
 class HtmlParser(object):
     """Parses html soup for html_tag and optional class:value dict"""
     def __init__(self, html_tag="tbody", class_dict={}, parser='lxml'):
