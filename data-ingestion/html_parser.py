@@ -4,6 +4,7 @@ import numpy
 
 class GetSoup(object):
     """Accepts html and outputs soup"""
+
     def __init__(self, parser="lxml"):
         self.parser = parser
 
@@ -27,7 +28,7 @@ class HtmlParser(object):
                 rows = table.find_all('tr')
                 for row in rows:
                     cols = row.find_all('td')
-                    table_data.append([ele.get_text(strip = True) for ele in cols])
+                    table_data.append([ele.get_text(strip=True) for ele in cols])
                 data_out.append(table_data)
 
         return data_out
@@ -39,9 +40,8 @@ def is_deepest_table(table_soup, html_tag, class_dict):
     return False
 
 
-
-class ExtractGameData(object):
-    """"Creates a GameData object with a dictionary of arrays for each sportsbook"""
+class ExtractMovingLineData(object):
+    """"Creates a  object with a dictionary of arrays for each sportsbook"""
 
     def __init__(self, parsed_table):
         self.parsed_table = parsed_table
@@ -58,4 +58,3 @@ class ExtractGameData(object):
             if len(table[0]) == 1:
                 sportsbook_name = table[0][0][:-15].strip()
             self.line_dict[sportsbook_name] = numpy.array(table[2:])
-
