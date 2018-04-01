@@ -16,19 +16,9 @@ Soup = html_parser.GetSoup().get_soup(Html)
 output = Html_Parser.get_tables(Soup)
 
 
+Bucks = html_parser.ExtractGameData(output)
 
-
-for tables in output:
-    if len(tables) == 1:
-        print(tables)
-    if len(tables) == 2:
-        print(tables[0][0])
-        print(tables[0][1])
-        print(tables[0][2])
-    else:
-        print(tables[:2])
-        print(numpy.array2string(numpy.array(tables[2:]), max_line_width=numpy.inf))
-
+print(Bucks.team_a, Bucks.team_b, Bucks.game_time, Bucks.game_date, Bucks.line_dict['ATLANTIS'])
 
 
 
