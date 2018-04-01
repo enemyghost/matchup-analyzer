@@ -34,29 +34,12 @@ class HtmlParser(object):
                 table_list.append(table_data)
         return to_game_data(table_list)
 
-def to_game_data(table_list):
-    """Extracts game data from table and returns created GameData object"""
-    teams = table_list[0][0][0].split(' @ ')
-    away_team = teams[0]
-    home_team = teams[-1]
-    game_time = table_list[1][1][0][10:]
-    game_date = table_list[1][0][0][10:]
-    return GameData(home_team, away_team, game_time, game_date, create_dict(table_list))
-
-def create_dict(table_list):
-    """Creates dictionary 'Sportsbook name':array of line movements"""
-    line_dict = {}
-    for table in table_list[2:]:
-        if len(table[0]) == 1:
-            sportsbook_name = table[0][0][:-15].strip()
-        line_dict[sportsbook_name] = np.array(table[2:])
-    return line_dict
-
 def is_deepest_table(table_soup, html_tag, class_dict): 
     """Returns True if no child tables exist"""
     if len(table_soup.find_all(html_tag, class_dict)) == 0:
         return True
     return False
+
 
 def to_game_data(table_list):
     """Extracts game data from table and returns created GameData object"""
@@ -75,3 +58,12 @@ class GameData(object):
         self.game_time = game_time
         self.game_date = game_date
         self.line_dict = line_dict
+
+def create_dict(table_list):
+    """Creates dictionary 'Sportsbook name':array of line movements"""
+    line_dict = {}
+    for table in table_list[2:]:
+        if len(table[0]) == 1:
+            sportsbook_name = table[0][0][:-15].strip()
+        line_dict[sportsbook_name] = np.array(table[2:])
+    return line_dict
