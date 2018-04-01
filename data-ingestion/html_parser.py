@@ -3,8 +3,7 @@ import numpy as np
 
 class SoupFactory(object):
     """Accepts html and outputs soup"""
-
-    def __init__(self, parser):
+    def __init__(self, parser="lxml"):
         self.parser = parser
 
     def get(self, raw_html):
@@ -31,6 +30,7 @@ class HtmlParser(object):
                 for row in rows:
                     cols = row.find_all('td')
                     table_data.append([ele.get_text(strip=True) for ele in cols])
+                data_out.append(table_data)
 
                 table_list.append(table_data)
 
@@ -68,3 +68,22 @@ def create_dict(table_list):
             sportsbook_name = table[0][0][:-15].strip()
         line_dict[sportsbook_name] = np.array(table[2:])
     return line_dict
+
+class ExtractMovingLineData(object):
+    """"Creates a  object with a dictionary of arrays for each sportsbook"""
+
+    def __init__(self, parsed_table):
+        self.parsed_table = parsed_table
+        self.teams = parsed_table[0][0][0]
+        self.team_a = self.teams.split(' @ ')[0]
+        self.team_b = self.teams.split(' @ ')[-1]
+        self.game_time = parsed_table[1][1][0][10:]
+        self.game_date = parsed_table[1][0][0][10:]
+        self.line_dict = {}
+        self.create_dict()
+
+    def create_dict(self):
+        for table in self.parsed_table[2:]:
+            if len(table[0]) == 1:
+                sportsbook_name = table[0][0][:-15].strip()
+            self.line_dict[sportsbook_name] = numpy.array(table[2:])
