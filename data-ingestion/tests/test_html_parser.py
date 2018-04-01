@@ -2,8 +2,13 @@ import sys, os
 sys.path.insert(0,'..')
 import unittest
 import html_parser
+
+script_dir = os.path.dirname(__file__) #<-- absolute dir the script is in
+rel_path = r"fixtures\bucks-vs-warriors-soup-output.txt"
+abs_file_path = os.path.join(script_dir, rel_path)
+
 class TestHtmlParser(unittest.TestCase):
-    test_file = open(r'C:\Coding Projects\matchup-analyzer\data-ingestion\tests\fixtures\bucks-vs-warriors-soup-output.txt', 'r')
+    test_file = open(abs_file_path, 'r')
     html = test_file.read()
     sportsbooks = ['ATLANTIS', "CAESARS/HARRAH'S", 'CG TECHNOLOGY', 'COASTS', 'GOLDEN NUGGET', "JERRY'S NUGGET", 'MIRAGE-MGM', 'PEPPERMILL', 'SOUTHPOINT', 'STATIONS', 'STRATOSPHERE', 'TREASURE ISLAND', 'VI CONSENSUS', 'WESTGATE SUPERBOOK', 'WILLIAM HILL', 'WYNN']
     def test(self):
