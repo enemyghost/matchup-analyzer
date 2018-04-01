@@ -56,6 +56,6 @@ class ExtractGameData(object):
     def create_dict(self):
         for table in self.parsed_table[2:]:
             if len(table[0]) == 1:
-                sportsbook_name = table[0][0][:-15]
+                sportsbook_name = table[0][0][:-15].strip()
             self.line_dict[sportsbook_name] = numpy.array(table[2:])
 
