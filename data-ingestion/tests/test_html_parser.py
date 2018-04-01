@@ -1,23 +1,23 @@
-import sys
-import cProfile
-# Add the parent dir to the syspath
+import sys, os
 sys.path.insert(0,'..')
+import unittest
+import html_parser
+class TestHtmlParser(unittest.TestCase):
+    test_file = open(r'C:\Coding Projects\matchup-analyzer\data-ingestion\tests\fixtures\bucks-vs-warriors-soup-output.txt', 'r')
+    html = test_file.read()
+    sportsbooks = ['ATLANTIS', "CAESARS/HARRAH'S", 'CG TECHNOLOGY', 'COASTS', 'GOLDEN NUGGET', "JERRY'S NUGGET", 'MIRAGE-MGM', 'PEPPERMILL', 'SOUTHPOINT', 'STATIONS', 'STRATOSPHERE', 'TREASURE ISLAND', 'VI CONSENSUS', 'WESTGATE SUPERBOOK', 'WILLIAM HILL', 'WYNN']
+    def test(self):
+        Html_Parser = html_parser.HtmlParser()
+        output = Html_Parser.get_tables(self.html)
+        self.assertEqual(output.home_team, "Golden State Warriors")
+        self.assertEqual(output.away_team, "Milwaukee Bucks")
+        self.assertEqual(output.game_time, "10:40 PM")
+        self.assertEqual(output.game_date, "Thursday, March 29, 2018")
+        for sportsbook in self.sportsbooks:
+            self.assertEqual(sportsbook in output.line_dict, True)
+            self.assertEqual(output.line_dict[sportsbook].shape[1], 12)
 
-import html_parser, html_fetcher
 
-test_urls = ["http://www.vegasinsider.com/college-basketball/odds/las-vegas/line-movement/loyola-chicago-@-michigan.cfm/date/3-31-18/time/1805#BT", "http://www.vegasinsider.com/nba/odds/las-vegas/line-movement/bucks-@-warriors.cfm/date/3-29-18/time/2235#AA",
-           "http://www.vegasinsider.com/nba/odds/las-vegas/line-movement/grizzlies-@-trail-blazers.cfm/date/4-01-18/time/2105#L", 'http://www.vegasinsider.com/nhl/odds/las-vegas/line-movement/canadiens-@-penguins.cfm/date/3-31-18/time/1910#BT']
 
-out = []
-for test_url in test_urls:
-
-    Html_Parser = html_parser.HtmlParser()
-
-    Html = html_fetcher.HtmlFetcher().fetch(test_url).content
-
-    output = Html_Parser.get_tables(Html)
-
-    out.append(test)
-
-for result in out:
-    print(result.teams, result.game_time, [key for key in result.line_dict])
+if __name__ == '__main__':
+     unittest.main()
