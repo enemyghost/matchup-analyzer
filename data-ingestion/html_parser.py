@@ -30,11 +30,27 @@ class HtmlParser(object):
                 for row in rows:
                     cols = row.find_all('td')
                     table_data.append([ele.get_text(strip=True) for ele in cols])
-                data_out.append(table_data)
 
                 table_list.append(table_data)
-
         return to_game_data(table_list)
+
+def to_game_data(table_list):
+    """Extracts game data from table and returns created GameData object"""
+    teams = table_list[0][0][0].split(' @ ')
+    away_team = teams[0]
+    home_team = teams[-1]
+    game_time = table_list[1][1][0][10:]
+    game_date = table_list[1][0][0][10:]
+    return GameData(home_team, away_team, game_time, game_date, create_dict(table_list))
+
+def create_dict(table_list):
+    """Creates dictionary 'Sportsbook name':array of line movements"""
+    line_dict = {}
+    for table in table_list[2:]:
+        if len(table[0]) == 1:
+            sportsbook_name = table[0][0][:-15].strip()
+        line_dict[sportsbook_name] = np.array(table[2:])
+    return line_dict
 
 def is_deepest_table(table_soup, html_tag, class_dict): 
     """Returns True if no child tables exist"""
@@ -59,31 +75,3 @@ class GameData(object):
         self.game_time = game_time
         self.game_date = game_date
         self.line_dict = line_dict
-
-def create_dict(table_list):
-    """Creates dictionary 'Sportsbook name':array of line movements"""
-    line_dict = {}
-    for table in table_list[2:]:
-        if len(table[0]) == 1:
-            sportsbook_name = table[0][0][:-15].strip()
-        line_dict[sportsbook_name] = np.array(table[2:])
-    return line_dict
-
-class ExtractMovingLineData(object):
-    """"Creates a  object with a dictionary of arrays for each sportsbook"""
-
-    def __init__(self, parsed_table):
-        self.parsed_table = parsed_table
-        self.teams = parsed_table[0][0][0]
-        self.team_a = self.teams.split(' @ ')[0]
-        self.team_b = self.teams.split(' @ ')[-1]
-        self.game_time = parsed_table[1][1][0][10:]
-        self.game_date = parsed_table[1][0][0][10:]
-        self.line_dict = {}
-        self.create_dict()
-
-    def create_dict(self):
-        for table in self.parsed_table[2:]:
-            if len(table[0]) == 1:
-                sportsbook_name = table[0][0][:-15].strip()
-            self.line_dict[sportsbook_name] = numpy.array(table[2:])
