@@ -1,5 +1,6 @@
 from bs4 import BeautifulSoup as bs
 import numpy as np
+import datetime
 
 class SoupFactory(object):
     """Accepts html and outputs soup"""
@@ -47,7 +48,8 @@ def to_game_data(table_list):
     away_team = teams[0]
     home_team = teams[-1]
     game_time = table_list[1][1][0][10:]
-    game_date = table_list[1][0][0][10:]
+    string_date = table_list[1][0][0][10:]
+    game_date = datetime.datetime.strptime(string_date, "%A, %B %d, %Y").strftime("%m-%d-%Y")
     return GameData(home_team, away_team, game_time, game_date, create_dict(table_list))
 
 class GameData(object):
