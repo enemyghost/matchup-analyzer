@@ -6,11 +6,13 @@ class HtmlFetcher(object):
     user_agent = 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/60.0.3112.113 Safari/537.36'
 
     def __init__(self, number_of_tries=1, proxy=None, timeout=5):
+        """proxy should be a string in format "type:///host:port"""
+
         self.number_of_tries = number_of_tries
-        self.proxy = Proxy(proxy) if proxy is not None else None #proxy string in the form 'type://host:port'
+        self.proxy = Proxy(proxy) if proxy is not None else None
         self.timeout = timeout
 
-    def get_html(self, url_string):
+    def fetch(self, url_string):
         """Takes in a url string and returns HttpResponse object"""
         
         header = {'User-Agent': self.user_agent}
@@ -41,7 +43,7 @@ class HttpResponse(object):
         self.content = content
 
 class Proxy(object):
-    """Takes a proxy string and parses into type and host"""
+    """Takes a proxy string and parses into type and host for set_proxy method"""
 
     def __init__(self, proxy_url):
         parsed        = urllib.parse.urlparse(proxy_url)
