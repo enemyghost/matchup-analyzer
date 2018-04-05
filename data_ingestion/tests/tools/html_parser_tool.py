@@ -14,18 +14,18 @@ urls = csv.DictReader(open(abs_file_path, 'r'))
 out = []
 for test_url in urls:
 
-    Html_Parser = html_parser.HtmlParser()
+    test_parser = html_parser.HtmlParser()
 
-    Html = html_fetcher.HtmlFetcher().fetch(test_url['url']).content
+    test_html = html_fetcher.HtmlFetcher().fetch(test_url['url']).content
 
-    output = Html_Parser.get_tables(Html)
+    output = test_parser.get_tables(test_html)
 
     out.append(output)
 
 
 for result in out:
 
-    with open(result.away_team + ' at ' + result.home_team + '.csv', 'w', newline='') as f:
+    with open(result.away_team + '_at_' + result.home_team + '_' + result.game_date + '.csv', 'w', newline='') as f:
         w = csv.writer(f, delimiter=',', quotechar='"')
         for key in result.line_dict.keys():
             for row in [result.line_dict[key][x,:] for x in range(result.line_dict[key].shape[0])]:
