@@ -1,6 +1,8 @@
 from bs4 import BeautifulSoup as bs
 import numpy as np
 import datetime
+import csv
+import os
 
 class SoupFactory(object):
     """Accepts html and outputs soup"""
@@ -69,3 +71,18 @@ def create_dict(table_list):
             sportsbook_name = table[0][0][:-15].strip()
         line_dict[sportsbook_name] = np.array(table[2:])
     return line_dict
+
+class GameDataCSVPersister(object):
+    """"Taks a GameData object and saves it to CSV file"""
+
+    def __init__ (self, game_data):
+        self.game_data = game_data
+
+    def to_csv (self):
+        filename = '/output/' + self.game_data.away_team + '_at_' + self.game_data.home_team + '_' + self.game_data.game_date + '.csv'
+        os.makedirs(os.path.dirname(filename), exist_ok=True)
+        with open(filename, 'w', newline='') as f:
+            w = csv.writer(f, delimiter=',', quotechar='"')
+            for key in self.game_data.line_dict.keys():
+                for row in [self.game_data.line_dict[key][x, :] for x in range(self.game_data.line_dict[key].shape[0])]: #iterates through rows of line data array
+                    w.writerow([key] + row.tolist())
