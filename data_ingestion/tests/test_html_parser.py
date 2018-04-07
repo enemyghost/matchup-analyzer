@@ -22,7 +22,5 @@ class TestHtmlParser(unittest.TestCase):
             self.assertEqual(sportsbook in output.line_dict, True)
             self.assertEqual(output.line_dict[sportsbook].shape[1], 12)
 
-
-
 if __name__ == '__main__':
      unittest.main()

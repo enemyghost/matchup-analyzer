@@ -63,3 +63,10 @@ target/
 
 #IDE
 .idea/
+
+#DATA
+*.csv
+
+tcl/
+Include/
+Scripts/

@@ -1,19 +1,19 @@
 from bs4 import BeautifulSoup as bs
 import numpy as np
+import datetime
+import csv
+import os
 
 class SoupFactory(object):
     """Accepts html and outputs soup"""
-
-    def __init__(self, parser):
+    def __init__(self, parser="lxml"):
         self.parser = parser
 
     def get(self, raw_html):
         return bs(raw_html, self.parser)
 
-
 class HtmlParser(object):
     """Parses html soup for html_tag and optional class:value dict"""
-
     def __init__(self, html_tag="tbody", class_dict={}, parser='lxml'):
         self.html_tag = html_tag
         self.class_dict = class_dict
@@ -35,7 +35,6 @@ class HtmlParser(object):
                     table_data.append([ele.get_text(strip=True) for ele in cols])
 
                 table_list.append(table_data)
-
         return to_game_data(table_list)
 
 def is_deepest_table(table_soup, html_tag, class_dict): 
@@ -51,7 +50,8 @@ def to_game_data(table_list):
     away_team = teams[0]
     home_team = teams[-1]
     game_time = table_list[1][1][0][10:]
-    game_date = table_list[1][0][0][10:]
+    string_date = table_list[1][0][0][10:]
+    game_date = datetime.datetime.strptime(string_date, "%A, %B %d, %Y").strftime("%m-%d-%Y")
     return GameData(home_team, away_team, game_time, game_date, create_dict(table_list))
 
 class GameData(object):
@@ -72,7 +72,17 @@ def create_dict(table_list):
         line_dict[sportsbook_name] = np.array(table[2:])
     return line_dict
 
+class GameDataCSVPersister(object):
+    """"Taks a GameData object and saves it to CSV file"""
 
+    def __init__ (self, game_data):
+        self.game_data = game_data
 
-
-
+    def to_csv (self):
+        filename = '/output/' + self.game_data.away_team + '_at_' + self.game_data.home_team + '_' + self.game_data.game_date + '.csv'
+        os.makedirs(os.path.dirname(filename), exist_ok=True)
+        with open(filename, 'w', newline='') as f:
+            w = csv.writer(f, delimiter=',', quotechar='"')
+            for key in self.game_data.line_dict.keys():
+                for row in [self.game_data.line_dict[key][x, :] for x in range(self.game_data.line_dict[key].shape[0])]: #iterates through rows of line data array
+                    w.writerow([key] + row.tolist())
