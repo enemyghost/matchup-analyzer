@@ -2,7 +2,6 @@
 import scrapy
 from datetime import datetime, timedelta
 
-
 class LineLinksSpider(scrapy.Spider):
     name = 'find_line_links'
 
@@ -12,13 +11,12 @@ class LineLinksSpider(scrapy.Spider):
         self.end_date = end_date
 
     def start_requests(self): 
-        for url in ["http://www.vegasinsider.com/" + sport + "/scoreboard/scores.cfm/game_date/" + date for date in date_range(self.start_date, self.end_date)]:
+        for url in ["http://www.vegasinsider.com/" + self.sport + "/scoreboard/scores.cfm/game_date/" + date for date in date_range(self.start_date, self.end_date)]:
             yield scrapy.Request(url=url, callback=self.parse)
 
     def parse(self, response):
-
         for url in response.xpath('//a[contains(@href,"line-movement")]/@href').extract():
-            yield {'url':'http://www.vegasinsider.com' + url}
+            yield {'url':'http://www.vegasinsider.com' + url, 'sport': self.sport, 'vendor_id': 1}
             
 
 def date_range(start, end, step=1, date_format="%m-%d-%Y"):
