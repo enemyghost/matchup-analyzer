@@ -70,3 +70,6 @@ target/
 tcl/
 Include/
 Scripts/
+
+# Mac stuff
+*.DS_Store

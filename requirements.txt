@@ -2,6 +2,8 @@ beautifulsoup4==4.6.0
 bs4==0.0.1
 numpy==1.14.2
 pandas==0.22.0
+psycopg2==2.7.4
 python-dateutil==2.7.2
 pytz==2018.3
+scrapy==1.5.0
 six==1.11.0
