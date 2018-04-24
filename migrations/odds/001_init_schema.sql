@@ -21,3 +21,10 @@ CREATE TABLE IF NOT EXISTS line_url_scheduling (
   vendor_id integer NOT NULL REFERENCES vendor,
   event_time_epoch_ms bigint
 );
+
+CREATE TABLE IF NOT EXISTS game_data (
+  sport_id integer NOT NULL REFERENCES sport,
+  vendor_id integer NOT NULL REFERENCES vendor,
+  home_team varchar,
+  away_team varchar
+);

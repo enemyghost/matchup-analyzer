@@ -51,6 +51,24 @@ def upsert_line_url(url = None, vendor_id = None, sport_id = None, sport_name = 
       cur.execute(query, (url, sport_id, vendor_id, event_time_epoch_ms, event_time_epoch_ms, url))
       conn.commit()
 
+def upsert_game_data(game_data = None, sport_id = None, vendor_id = None):
+  """ Upserts the given game_data into the line_data table"""
+
+  if game_data is not None:
+    vendor_id = vendor_id
+    sport_id = sport_id
+
+  if sport_id is None:
+    if sport_name is None:
+      raise ValueError("Must provide either sport_id or sport_name")
+    sport_id = get_sport_id_for_vendor(vendor_id, sport_name)
+
+  with OddsConnection() as conn:
+    with conn.cursor() as cur:
+      query = "INSERT INTO game_data (sport_id, vendor_id, home_team, away_team) VALUES (%s, %s, %s, %s) ON CONFLICT DO NOTHING;"
+      cur.execute(query, (sport_id, vendor_id, game_data.home_team, game_data.away_team))
+      conn.commit()
+
 def get_sport_id_for_vendor(vendor_id, sport_name):
   """Finds the Sport ID for the given vendor_id/sport_name combo"""
 
