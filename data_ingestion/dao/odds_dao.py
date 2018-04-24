@@ -1,5 +1,7 @@
 import psycopg2
+import numpy as np
 import os
+import datetime
 
 class LineUrl(object):
   def __init__(self, url, sport_id, vendor_id, event_time_epoch_ms = None):
@@ -63,11 +65,41 @@ def upsert_game_data(game_data = None, sport_id = None, vendor_id = None):
       raise ValueError("Must provide either sport_id or sport_name")
     sport_id = get_sport_id_for_vendor(vendor_id, sport_name)
 
+  game_id = "_".join([game_data.home_team, game_data.away_team, str(game_data.game_date.timestamp())])
+
   with OddsConnection() as conn:
     with conn.cursor() as cur:
-      query = "INSERT INTO game_data (sport_id, vendor_id, home_team, away_team) VALUES (%s, %s, %s, %s) ON CONFLICT DO NOTHING;"
-      cur.execute(query, (sport_id, vendor_id, game_data.home_team, game_data.away_team))
+      query = "INSERT INTO game_data (game_id, sport_id, game_time_epoch_ms, vendor_id, home_team, away_team) VALUES (%s, %s, %s, %s, %s, %s) ON CONFLICT DO NOTHING;"
+      cur.execute(query, (game_id, sport_id, game_data.game_date.timestamp(), vendor_id, game_data.home_team, game_data.away_team))
       conn.commit()
+      for sportsbook_name, line_array in game_data.line_dict.items():
+        query = "INSERT INTO sportsbook (sportsbook_name) VALUES (%s) ON CONFLICT DO NOTHING;"
+        cur.execute(query, (sportsbook_name,))
+        conn.commit()
+        for line in line_array:
+
+          sportsbook_id = get_sportsbook_id(sportsbook_name)
+          year = game_data.game_date.year
+          month_day = line[0].split(r"/")
+          string_date = '-'.join([month_day[0], month_day[1], str(year), line[1]])  
+          line_snapshot_time_epoch_ms = datetime.datetime.strptime(string_date, "%m-%d-%Y-%I:%M%p").timestamp()
+          line_snapshot_timestamp = "-".join([game_id, str(line_snapshot_time_epoch_ms)])
+          
+
+          query = "INSERT INTO line_movement (line_snapshot_timestamp, game_id, sportsbook_id, money_line_fav, money_line_dog, spread_fav, spread_dog, total_over, total_under, fst_half_fav, fst_half_dog, snd_half_fav, snd_half_dog) VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s) ON CONFLICT DO NOTHING;"
+          cur.execute(query, (line_snapshot_timestamp, game_id, sportsbook_id, line[2], line[3], line[4], line[5], line[6], line[7], line[8], line[9], line[10], line[11]))
+          conn.commit()
+
+def get_sportsbook_id(sportsbook_name):
+    with OddsConnection() as conn:
+      with conn.cursor() as cur:
+        get_sportsbook_id_query ="SELECT sportsbook_id FROM sportsbook WHERE sportsbook_name = %s"
+        cur.execute(get_sportsbook_id_query, (sportsbook_name,))
+        id_result = cur.fetchone()
+        if (id_result is None):
+          raise ValueError("No sportsbook found for name '%s'" % (sportsbook_name))
+
+        return id_result[0]
 
 def get_sport_id_for_vendor(vendor_id, sport_name):
   """Finds the Sport ID for the given vendor_id/sport_name combo"""

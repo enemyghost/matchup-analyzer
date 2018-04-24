@@ -22,9 +22,33 @@ CREATE TABLE IF NOT EXISTS line_url_scheduling (
   event_time_epoch_ms bigint
 );
 
+CREATE TABLE IF NOT EXISTS sportsbook (
+  sportsbook_id serial PRIMARY KEY,
+  sportsbook_name varchar NOT NULL UNIQUE
+);
+
+
 CREATE TABLE IF NOT EXISTS game_data (
+  game_id varchar PRIMARY KEY,
   sport_id integer NOT NULL REFERENCES sport,
   vendor_id integer NOT NULL REFERENCES vendor,
+  game_time_epoch_ms bigint,
   home_team varchar,
   away_team varchar
+);
+
+CREATE TABLE IF NOT EXISTS line_movement (
+  game_id varchar PRIMARY KEY,
+  sportsbook_id varchar,
+  line_snapshot_time_epoch_ms bigint,
+  money_line_fav varchar,
+  money_line_dog varchar,
+  spread_fav varchar,
+  spread_dog varchar,
+  total_over varchar,
+  total_under varchar,
+  fst_half_fav varchar,
+  fst_half_dog varchar,
+  snd_half_fav varchar,
+  snd_half_dog varchar
 );

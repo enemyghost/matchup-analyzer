@@ -1,11 +1,10 @@
 # -*- coding: utf-8 -*-
 import sys
-sys.path.append(r'\Coding Projects\matchup-analyzer\data_ingestion\dao')
 import scrapy
 from bs4 import BeautifulSoup as bs
 import numpy as np
 import datetime
-import odds_dao
+from data_ingestion.dao import odds_dao
 
 class LinetablesSpider(scrapy.Spider):
     name = 'parse_linetables'
