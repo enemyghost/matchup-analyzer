@@ -29,17 +29,24 @@ CREATE TABLE IF NOT EXISTS sportsbook (
 
 
 CREATE TABLE IF NOT EXISTS game_data (
-  game_id varchar PRIMARY KEY,
-  sport_id integer NOT NULL REFERENCES sport,
-  vendor_id integer NOT NULL REFERENCES vendor,
+  game_id serial PRIMARY KEY,
+  sport_id integer,
+  vendor_id integer,
   game_time_epoch_ms bigint,
   home_team varchar,
   away_team varchar
 );
 
+CREATE TABLE IF NOT EXISTS team (
+    team_id serial PRIMARY KEY,
+    team_name varchar NOT NULL UNIQUE,
+    team_abbr varchar
+);
+
 CREATE TABLE IF NOT EXISTS line_movement (
-  game_id varchar PRIMARY KEY,
-  sportsbook_id varchar,
+  line_id serial PRIMARY KEY,
+  sportsbook_id int REFERENCES sportsbook,
+  game_id int REFERENCES game_data,
   line_snapshot_time_epoch_ms bigint,
   money_line_fav varchar,
   money_line_dog varchar,
