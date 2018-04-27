@@ -3,7 +3,7 @@ import sys
 import scrapy
 from bs4 import BeautifulSoup as bs
 import numpy as np
-import datetime
+import datetime as dt
 from data_ingestion.dao import odds_dao
 
 class LinetablesSpider(scrapy.Spider):
@@ -11,14 +11,14 @@ class LinetablesSpider(scrapy.Spider):
     allowed_domains = ['www.vegasinsider.com/']
 
     def __init__(self, sport_name, vendor_id=1, earliest_event_date_epoch_ms=0, html_tag='tbody', class_dict={}, parser='lxml'):
-        '''Takes a sport, vendor_id, earliest_even_date_epoc_ms, optional html_tag, class_dict and parser, 
+        '''Takes a sport, vendor_id, earliest_even_date_epoc_ms, optional html_tag, class_dict and parser,
         Gets all urls from the line_url_scheduling table for the given vendor_id and sport_id, where the
         event date is null or greater than the given earliest_event_date_epoch_ms and returns parsed table as game_data object
         :param earliest_event_date_epoch_ms: urls after this date will be retreived
         :param sport_id: sport_id
         :param game_time: the time the game starts/ed
         :param line_dict: dictionary of {sportsbook:array of line movement data}
-        '''  
+        '''
         self.earliest_event_date_epoch_ms = earliest_event_date_epoch_ms
         self.sport_id = odds_dao.get_sport_id_for_vendor(vendor_id, sport_name)
         self.vendor_id = vendor_id
@@ -72,7 +72,7 @@ class HtmlParser(object):
 
         return to_game_data(table_list)
 
-def is_deepest_table(table_soup, html_tag, class_dict): 
+def is_deepest_table(table_soup, html_tag, class_dict):
     """Returns True if no child tables exist"""
     if len(table_soup.find_all(html_tag, class_dict)) == 0:
         return True
@@ -86,7 +86,7 @@ def to_game_data(table_list):
     home_team = teams[-1]
     game_time = table_list[1][1][0][10:]
     string_date = table_list[1][0][0][10:]
-    game_date = datetime.datetime.strptime(string_date, "%A, %B %d, %Y")
+    game_date = dt.datetime.strptime(string_date, "%A, %B %d, %Y")
     return GameData(home_team, away_team, game_time, game_date, create_dict(table_list))
 
 class GameData(object):
