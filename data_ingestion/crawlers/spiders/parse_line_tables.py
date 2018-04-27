@@ -27,13 +27,12 @@ class LinetablesSpider(scrapy.Spider):
 
     def start_requests(self):
         line_urls = odds_dao.get_line_urls(self.vendor_id, self.sport_id, self.earliest_event_date_epoch_ms)
-
         for line_url in line_urls:
-            yield scrapy.Request(url=line_url.url, callback=self.parse)
+            yield scrapy.Request(url=line_url.url, callback=self.parse, meta={'url':line_url.url})
 
     def parse(self, response):
         game_data = self.html_parser.get_tables(response.body)
-        yield {'game_data':game_data, 'sport_id': self.sport_id, 'vendor_id': self.vendor_id}
+        yield {'game_data':game_data, 'sport_id': self.sport_id, 'vendor_id': self.vendor_id, 'url': response.request.url}
 
 
 class SoupFactory(object):
@@ -111,7 +110,7 @@ class GameData(object):
         self.home_team = home_team
         self.away_team = away_team
         self.game_datetime = game_datetime
-        self.game_timestamp = game_timestamp
+        self.game_timestamp = game_timestamp * 1000
         self.line_dict = convert_line_times_to_timestamps(line_dict, game_datetime)
 
 def convert_line_times_to_timestamps(line_dict, game_datetime):
@@ -130,7 +129,7 @@ def convert_line_times_to_timestamps(line_dict, game_datetime):
                                                  )
             tz = pytz.timezone('US/Eastern')
             tz.localize(line_snapshot_datetime)
-            line[0] = line_snapshot_datetime.timestamp()
+            line[0] = line_snapshot_datetime.timestamp() * 1000
     return line_dict
 
 def create_dict(table_list):

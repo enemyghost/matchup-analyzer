@@ -5,19 +5,19 @@ from datetime import datetime, timedelta
 class LineLinksSpider(scrapy.Spider):
     name = 'get_line_urls'
 
-    def __init__(self, start_date, end_date, sport_name=None):
-        self.sport_name = sport_name
+    def __init__(self, start_date, end_date, sport=None):
+        self.sport = sport
         self.start_date = start_date
         self.end_date = end_date
 
-    def start_requests(self): 
-        for url in ["http://www.vegasinsider.com/" + self.sport_name + "/scoreboard/scores.cfm/game_date/" + date for date in date_range(self.start_date, self.end_date)]:
+    def start_requests(self):
+        for url in ["http://www.vegasinsider.com/" + self.sport + "/scoreboard/scores.cfm/game_date/" + date for date in date_range(self.start_date, self.end_date)]:
             yield scrapy.Request(url=url, callback=self.parse)
 
     def parse(self, response):
         for url in response.xpath('//a[contains(@href,"line-movement")]/@href').extract():
-            yield {'url':'http://www.vegasinsider.com' + url, 'sport': self.sport_name, 'vendor_id': 1}
-            
+            yield {'url':'http://www.vegasinsider.com' + url, 'sport': self.sport, 'vendor_id': 1}
+
 
 def date_range(start, end, step=1, date_format="%m-%d-%Y"):
     """
@@ -30,10 +30,7 @@ def date_range(start, end, step=1, date_format="%m-%d-%Y"):
     start = datetime.strptime(str(start), date_format)
     end = datetime.strptime(str(end), date_format)
     num_days = (end - start).days
-    
+
     for d in range(0, num_days + step, step):
         date_i = start + timedelta(days=d)
         yield date_i.strftime(date_format)
-
-
-
