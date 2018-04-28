@@ -40,9 +40,11 @@ CREATE TABLE IF NOT EXISTS game_data (
 
 CREATE TABLE IF NOT EXISTS team (
     team_id serial PRIMARY KEY,
+    team_symbol varchar(3),
+    team_name varchar,
+    team_name_full varchar,
     sport_id integer,
-    team_name varchar NOT NULL UNIQUE,
-    team_abbr varchar
+    UNIQUE (team_symbol, sport_id)
 );
 
 CREATE TABLE IF NOT EXISTS line_movement (

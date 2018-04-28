@@ -11,28 +11,31 @@ class LinetablesSpider(scrapy.Spider):
     name = 'parse_line_tables'
     allowed_domains = ['www.vegasinsider.com/']
 
-    def __init__(self, sport, vendor_id=1, earliest_event_date_epoch_ms=0, html_tag='tbody', class_dict={}, parser='lxml'):
+    def __init__(self, sport=None, vendor_id=1, earliest_event_date_epoch_ms=0, html_tag='tbody', class_dict={}, parser='lxml'):
         '''Takes a sport, vendor_id, earliest_even_date_epoc_ms, optional html_tag, class_dict and parser,
         Gets all urls from the line_url_scheduling table for the given vendor_id and sport_id, where the
         event date is null or greater than the given earliest_event_date_epoch_ms and returns parsed table as game_data object
         :param earliest_event_date_epoch_ms: urls after this date will be retreived
-        :param sport_id: sport_id
+        :param sport: sport name string of urls to parse, if None will parse all urls in scheduling table
         :param game_time: the time the game starts/ed
-        :param line_dict: dictionary of {sportsbook:array of line movement data}
+        :param html_tag: the html_tag to taget for table parsing, 'tbody' default for vegasinsider line movement pages
+        :param class_dict: dictionary of css class:value to target for table parsing, default none for vegasinsider live movement pages
+        :param parser: parser to use for html parsing, lxml default
         '''
         self.earliest_event_date_epoch_ms = earliest_event_date_epoch_ms
-        self.sport_id = odds_dao.get_sport_id_for_vendor(vendor_id, sport)
+        self.sport_id = odds_dao.get_sport_id_for_vendor(vendor_id, sport) if sport is not None else None
         self.vendor_id = vendor_id
         self.html_parser = HtmlParser(html_tag, class_dict, parser)
 
     def start_requests(self):
-        line_urls = odds_dao.get_line_urls(self.vendor_id, self.sport_id, self.earliest_event_date_epoch_ms)
-        for line_url in line_urls:
-            yield scrapy.Request(url=line_url.url, callback=self.parse, meta={'url':line_url.url})
+        self.line_urls = odds_dao.get_line_urls(self.vendor_id, self.sport_id, self.earliest_event_date_epoch_ms)
+        for line_url in self.line_urls:
+            yield scrapy.Request(url=line_url.url, callback=self.parse, meta={'line_url':line_url})
 
     def parse(self, response):
         game_data = self.html_parser.get_tables(response.body)
-        yield {'game_data':game_data, 'sport_id': self.sport_id, 'vendor_id': self.vendor_id, 'url': response.request.url}
+        sport_id = response.request.meta['line_url'].sport_id
+        yield {'game_data':game_data, 'sport_id': sport_id, 'vendor_id': self.vendor_id, 'url': response.request.url}
 
 
 class SoupFactory(object):
@@ -116,7 +119,6 @@ class GameData(object):
 def convert_line_times_to_timestamps(line_dict, game_datetime):
     for sportsbook_name, line_table in line_dict.items():
         for line in line_table:
-
             line_snapshot_year = game_datetime.year
             line_snapshot_month_str, line_snapshot_day_str = line[0].split(r"/")
             line_snapshot_time_str = line[1]
@@ -133,7 +135,9 @@ def convert_line_times_to_timestamps(line_dict, game_datetime):
     return line_dict
 
 def create_dict(table_list):
-    """Creates dictionary 'Sportsbook name':array of line movements"""
+    """Creates dictionary {'Sportsbook name':array of line movements}
+    removes headers from table.
+    """
     line_dict = {}
     for table in table_list[2:]:
         if len(table[0]) == 1:

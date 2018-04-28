@@ -53,7 +53,7 @@ def upsert_line_url(url = None, vendor_id = None, sport_id = None, sport_name = 
       cur.execute(query, (url, sport_id, vendor_id, event_time_epoch_ms, event_time_epoch_ms, url))
       conn.commit()
 
-def upsert_game_data(game_data = None, sport_id = None, vendor_id = None):
+def upsert_game_data(game_data = None, sport_id  =None, sport_name = None, vendor_id = None):
   """ Upserts the given game_data into the line_data table"""
 
   if game_data is not None:
@@ -79,8 +79,8 @@ def upsert_game_data(game_data = None, sport_id = None, vendor_id = None):
         cur.execute(query, (sportsbook_name,))
         conn.commit()
 
+        sportsbook_id = get_sportsbook_id(sportsbook_name)
         for line in line_array:
-          sportsbook_id = get_sportsbook_id(sportsbook_name)
           query = "INSERT INTO line_movement (sportsbook_id, game_id, line_snapshot_time_epoch_ms, money_line_fav, money_line_dog, spread_fav, spread_dog, total_over, total_under, fst_half_fav, fst_half_dog, snd_half_fav, snd_half_dog) VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s) ON CONFLICT DO NOTHING;"
           cur.execute(query, (sportsbook_id, game_id, int(float(line[0])), line[2], line[3], line[4], line[5], line[6], line[7], line[8], line[9], line[10], line[11]))
           conn.commit()
@@ -91,9 +91,10 @@ def get_sportsbook_id(sportsbook_name):
         get_sportsbook_id_query ="SELECT sportsbook_id FROM sportsbook WHERE sportsbook_name = %s"
         cur.execute(get_sportsbook_id_query, (sportsbook_name,))
         id_result = cur.fetchone()
+
         if (id_result is None):
           raise ValueError("No sportsbook found for name '%s'" % (sportsbook_name))
-
+          
         return id_result[0]
 
 def get_sport_id_for_vendor(vendor_id, sport_name):
