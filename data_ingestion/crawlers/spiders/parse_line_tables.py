@@ -5,6 +5,7 @@ from bs4 import BeautifulSoup as bs
 import numpy as np
 import datetime as dt
 import pytz
+import re
 from data_ingestion.dao import odds_dao
 
 class LinetablesSpider(scrapy.Spider):
@@ -39,7 +40,7 @@ class LinetablesSpider(scrapy.Spider):
 
 
 class SoupFactory(object):
-    """Accepts html and outputs soup"""
+    """Creates a soup factory object based on the parser chosen, get returns html soup via beautifulsoup"""
 
     def __init__(self, parser):
         self.parser = parser
@@ -69,7 +70,7 @@ class HtmlParser(object):
 
                 for row in rows:
                     cols = row.find_all('td')
-                    table_data.append([ele.get_text(strip=True) for ele in cols])
+                    table_data.append([convert_string_line_to_line_object(ele.get_text(strip=True)) for ele in cols])
 
                 table_list.append(table_data)
 
@@ -81,26 +82,58 @@ def is_deepest_table(table_soup, html_tag, class_dict):
         return True
     return False
 
-
 def to_game_data(table_list):
     """Extracts game data from table and returns GameData object"""
-    teams = table_list[0][0][0].split(' @ ')
-    away_team = teams[0]
-    home_team = teams[-1]
+    away_team, home_team = table_list[0][0][0].split(' @ ')
     game_time_str = table_list[1][1][0][10:]
     game_date_str = table_list[1][0][0][10:]
     naive_game_time = dt.datetime.strptime(game_time_str, "%I:%M %p").time()
     game_date = dt.datetime.strptime(game_date_str, "%A, %B %d, %Y")
     tz = pytz.timezone('US/Eastern')
-    game_datetime = dt.datetime(game_date.year,
-                                game_date.month,
-                                game_date.day,
-                                naive_game_time.hour,
-                                naive_game_time.minute,
-                                )
-    tz.localize(game_datetime)
-    game_timestamp = game_datetime.timestamp()
-    return GameData(home_team, away_team, game_datetime, game_timestamp, create_dict(table_list))
+    game_naive_datetime = dt.datetime(game_date.year,
+                                            game_date.month,
+                                            game_date.day,
+                                            naive_game_time.hour,
+                                            naive_game_time.minute,
+                                            )
+    game_datetime = tz.localize(game_naive_datetime)
+    game_timestamp_ms = game_datetime.timestamp() * 1000
+    line_dict = convert_line_times_to_timestamps(create_dict(table_list), game_datetime)
+    return GameData(home_team, away_team, game_datetime, game_timestamp_ms, line_dict)
+
+class LineOdds(object):
+
+    def __init__(self, type, team_symbol, odds, spread=None, over_under=None):
+        self.type = type
+        self.team_symbol = team_symbol
+        self.odds = odds
+        self.spread = spread
+        self.over_under = over_under
+
+    def __repr__(self):
+        return ' '.join([self.team_symbol, self.odds])
+
+def convert_string_line_to_line_object(string, type=None):
+
+    money_line_regx = re.compile(r'^(\w{3})([\+\-]\d+)$')
+    spread_regx = re.compile(r'^(\w{3})([\+\-]\d+\.\d+)\s(\-\d+)$')
+    over_under_regx = re.compile(r'^(\d+\.\d)\s([\-\+]\d+)$')
+
+    if type == "money_line" or re.search(money_line_regx, string):
+        team_symbol, odds = re.findall(money_line_regx, string)[0]
+        type = "money_line"
+        return LineOdds(type, team_symbol, odds)
+
+    elif type == "spread" or re.search(spread_regx, string):
+        team_symbol, spread, odds = re.findall(spread_regx, string)[0]
+        type = "spread"
+        return LineOdds(type, team_symbol, odds, spread=spread)
+
+    elif type == "over_under" or re.search(over_under_regx, string):
+        over_under, odds = re.findall(over_under_regx, string)[0]
+        type = "over_under"
+        return LineOdds(type, None, odds, over_under=over_under)
+    return string
 
 class GameData(object):
     """"GameData object with a dictionary of arrays for each sportsbooks line movement data
@@ -109,17 +142,18 @@ class GameData(object):
     :param game_time: the time the game starts/ed
     :param line_dict: dictionary of {sportsbook:array of line movement data}
     """
-    def __init__(self, home_team, away_team, game_datetime, game_timestamp, line_dict):
+    def __init__(self, home_team, away_team, game_datetime, game_timestamp_ms, line_dict):
         self.home_team = home_team
         self.away_team = away_team
         self.game_datetime = game_datetime
-        self.game_timestamp = game_timestamp * 1000
-        self.line_dict = convert_line_times_to_timestamps(line_dict, game_datetime)
+        self.game_timestamp = game_timestamp_ms
+        self.line_dict = line_dict
 
 def convert_line_times_to_timestamps(line_dict, game_datetime):
+    line_snapshot_year = game_datetime.year
+    tz = pytz.timezone('US/Eastern')
     for sportsbook_name, line_table in line_dict.items():
         for line in line_table:
-            line_snapshot_year = game_datetime.year
             line_snapshot_month_str, line_snapshot_day_str = line[0].split(r"/")
             line_snapshot_time_str = line[1]
             line_snapshot_time = dt.datetime.strptime(line_snapshot_time_str, "%I:%M%p").time()
@@ -129,9 +163,8 @@ def convert_line_times_to_timestamps(line_dict, game_datetime):
                                                  line_snapshot_time.hour,
                                                  line_snapshot_time.minute
                                                  )
-            tz = pytz.timezone('US/Eastern')
             tz.localize(line_snapshot_datetime)
-            line[0] = line_snapshot_datetime.timestamp() * 1000
+            line[0] = line_snapshot_datetime.timestamp() * 1000 #Convert to ms
     return line_dict
 
 def create_dict(table_list):
