@@ -68,9 +68,9 @@ def upsert_game_data(game_data = None, sport_id = None, vendor_id = None):
 
   with OddsConnection() as conn:
     with conn.cursor() as cur:
-      query = "INSERT INTO game_data (sport_id, vendor_id, game_time_epoch_ms,  home_team, away_team) VALUES (%s, %s, %s, %s, %s) RETURNING currval(game_id);"
+      query = "INSERT INTO game_data (sport_id, vendor_id, game_time_epoch_ms,  home_team, away_team) VALUES (%s, %s, %s, %s, %s) ON CONFLICT DO NOTHING RETURNING game_id;"
       cur.execute(query, (sport_id, vendor_id, game_data.game_timestamp,  game_data.home_team, game_data.away_team))
-      game_id = cur.fetchone()
+      game_id = cur.fetchone()[0]
       conn.commit()
 
 
@@ -81,8 +81,8 @@ def upsert_game_data(game_data = None, sport_id = None, vendor_id = None):
 
         for line in line_array:
           sportsbook_id = get_sportsbook_id(sportsbook_name)
-          query = "INSERT INTO line_movement (sportsbook_id, game_id, line_snapshot_time_epoch_ms, money_line_fav, money_line_dog, spread_fav, spread_dog, total_over, total_under, fst_half_fav, fst_half_dog, snd_half_fav, snd_half_dog) VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s) ON CONFLICT DO NOTHING;"
-          cur.execute(query, (sportsbook_id, game_id, line[0], line[2], line[3], line[4], line[5], line[6], line[7], line[8], line[9], line[10], line[11]))
+          query = "INSERT INTO line_movement (sportsbook_id, game_id, line_snapshot_time_epoch_ms, money_line_fav, money_line_dog, spread_fav, spread_dog, total_over, total_under, fst_half_fav, fst_half_dog, snd_half_fav, snd_half_dog) VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s) ON CONFLICT DO NOTHING;"
+          cur.execute(query, (sportsbook_id, game_id, int(float(line[0])), line[2], line[3], line[4], line[5], line[6], line[7], line[8], line[9], line[10], line[11]))
           conn.commit()
 
 def get_sportsbook_id(sportsbook_name):
