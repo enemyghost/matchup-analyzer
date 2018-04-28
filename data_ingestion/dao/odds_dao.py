@@ -68,7 +68,7 @@ def upsert_game_data(game_data = None, sport_id = None, vendor_id = None):
 
   with OddsConnection() as conn:
     with conn.cursor() as cur:
-      query = "INSERT INTO game_data (sport_id, vendor_id, game_time_epoch_ms,  home_team, away_team) VALUES (%s, %s, %s, %s, %s);"
+      query = "INSERT INTO game_data (sport_id, vendor_id, game_time_epoch_ms,  home_team, away_team) VALUES (%s, %s, %s, %s, %s) RETURNING currval(game_id);"
       cur.execute(query, (sport_id, vendor_id, game_data.game_timestamp,  game_data.home_team, game_data.away_team))
       game_id = cur.fetchone()
       conn.commit()
