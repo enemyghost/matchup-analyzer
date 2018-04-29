@@ -71,7 +71,6 @@ class HtmlParser(object):
                 for row in rows:
                     cols = row.find_all('td')
                     table_data.append([convert_string_line_to_line_object(ele.get_text(strip=True)) for ele in cols])
-
                 table_list.append(table_data)
 
         return to_game_data(table_list)
@@ -110,14 +109,16 @@ class LineOdds(object):
         self.spread = spread
         self.over_under = over_under
 
-    def __repr__(self):
-        return ' '.join([self.team_symbol, self.odds])
+#    def __repr__(self):
+#        return ' '.join([self.type, self.team_symbol, self.odds])
 
 def convert_string_line_to_line_object(string, type=None):
 
-    money_line_regx = re.compile(r'^(\w{3})([\+\-]\d+)$')
-    spread_regx = re.compile(r'^(\w{3})([\+\-]\d+\.\d+)\s(\-\d+)$')
-    over_under_regx = re.compile(r'^(\d+\.\d)\s([\-\+]\d+)$')
+    money_line_regx = re.compile(r'^([A-Z]{3})([\+\-]\d+)$')
+    spread_regx     = re.compile(r'^([A-Z]{3})([\+\-]\d+\.?\d?)\s*([\-\+]\d+)$')
+    over_under_regx = re.compile(r'^(\d+\.?\d)\s*([\-\+]\d+)$')
+    half_regx       = re.compile(r'^([A-Z]{3})(XX|[\+\-]\d+\.?\d?)$')
+    no_data_regx    = re.compile(r'XX')
 
     if type == "money_line" or re.search(money_line_regx, string):
         team_symbol, odds = re.findall(money_line_regx, string)[0]
@@ -133,6 +134,21 @@ def convert_string_line_to_line_object(string, type=None):
         over_under, odds = re.findall(over_under_regx, string)[0]
         type = "over_under"
         return LineOdds(type, None, odds, over_under=over_under)
+
+    elif type == "half" or re.search(half_regx, string):
+        team_symbol, odds = re.findall(half_regx, string)[0]
+        type = "half"
+        return LineOdds(type, team_symbol, odds)
+
+    elif re.search(no_data_regx, string):
+        team_symbol = re.findall(r'([A-Z]{3}|XX)\s?X{0,2}$', string)[0]
+        if team_symbol is not 'XX':
+            return LineOdds(None, team_symbol, None)
+        return LineOdds(None, None, None)
+
+    elif string == '':
+        return LineOdds(None, None, None)
+
     return string
 
 class GameData(object):

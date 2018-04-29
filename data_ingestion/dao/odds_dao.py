@@ -68,11 +68,12 @@ def upsert_game_data(game_data = None, sport_id  =None, sport_name = None, vendo
 
   with OddsConnection() as conn:
     with conn.cursor() as cur:
-      query = "INSERT INTO game_data (sport_id, vendor_id, game_time_epoch_ms,  home_team, away_team) VALUES (%s, %s, %s, %s, %s) ON CONFLICT DO NOTHING RETURNING game_id;"
+      query = "INSERT INTO game_data (sport_id, vendor_id, game_time_epoch_ms, home_team, away_team) VALUES (%s, %s, %s, %s, %s) ON CONFLICT DO NOTHING RETURNING game_id;"
       cur.execute(query, (sport_id, vendor_id, game_data.game_timestamp,  game_data.home_team, game_data.away_team))
-      game_id = cur.fetchone()[0]
       conn.commit()
 
+
+      game_id = get_game_id(sport_id, vendor_id, game_data.game_timestamp, game_data.home_team)
 
       for sportsbook_name, line_array in game_data.line_dict.items():
         query = "INSERT INTO sportsbook (sportsbook_name) VALUES (%s) ON CONFLICT DO NOTHING;"
@@ -81,9 +82,32 @@ def upsert_game_data(game_data = None, sport_id  =None, sport_name = None, vendo
 
         sportsbook_id = get_sportsbook_id(sportsbook_name)
         for line in line_array:
-          query = "INSERT INTO line_movement (sportsbook_id, game_id, line_snapshot_time_epoch_ms, money_line_fav, money_line_dog, spread_fav, spread_dog, total_over, total_under, fst_half_fav, fst_half_dog, snd_half_fav, snd_half_dog) VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s) ON CONFLICT DO NOTHING;"
-          cur.execute(query, (sportsbook_id, game_id, int(float(line[0])), line[2], line[3], line[4], line[5], line[6], line[7], line[8], line[9], line[10], line[11]))
-          conn.commit()
+            line_snapshot_time_epoch_ms = int(float(line[0]))
+            fav_team_id = get_id_for_team(line[2].team_symbol, sport_id)
+            dog_team_id = get_id_for_team(line[3].team_symbol, sport_id)
+            money_line_fav_odds = line[2].odds
+            money_line_dog_odds = line[3].odds
+            spread = line[4].spread
+            spread_fav_odds = line[4].odds
+            spread_dog_odds = line[5].odds
+            over_under = line[6].over_under
+            over_odds = line[6].odds
+            under_odds = line[7].odds
+            fst_half_odds = line[8].odds
+            snd_half_odds = line[10].odds
+            query = "INSERT INTO line_movement (sportsbook_id, game_id, line_snapshot_time_epoch_ms, fav_team_id, dog_team_id, money_line_fav_odds, money_line_dog_odds, spread, spread_fav_odds, spread_dog_odds, over_under, over_odds, under_odds, fst_half_odds, snd_half_odds) VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s) ON CONFLICT DO NOTHING;"
+            cur.execute(query, (sportsbook_id, game_id, line_snapshot_time_epoch_ms, fav_team_id, dog_team_id, money_line_fav_odds, money_line_dog_odds, spread, spread_fav_odds, spread_dog_odds, over_under, over_odds, under_odds, fst_half_odds, snd_half_odds))
+            conn.commit()
+
+def get_game_id(sport_id, vendor_id, game_timestamp, home_team):
+    with OddsConnection() as conn:
+      with conn.cursor() as cur:
+        get_game_id_query ="SELECT game_id FROM game_data WHERE sport_id = %s AND vendor_id = %s AND game_time_epoch_ms = %s AND home_team = %s"
+        cur.execute(get_game_id_query, (sport_id, vendor_id, game_timestamp, home_team))
+        id_result = cur.fetchone()
+        if (id_result is None):
+          raise ValueError("No game found for name")
+        return id_result[0]
 
 def get_sportsbook_id(sportsbook_name):
     with OddsConnection() as conn:
@@ -94,8 +118,19 @@ def get_sportsbook_id(sportsbook_name):
 
         if (id_result is None):
           raise ValueError("No sportsbook found for name '%s'" % (sportsbook_name))
-          
+
         return id_result[0]
+
+def get_id_for_team(team_symbol, sport_id):
+    with OddsConnection() as conn:
+        with conn.cursor() as cur:
+            get_team_id_query = "SELECT team_id FROM team WHERE team_symbol = %s AND sport_id = %s"
+            cur.execute(get_team_id_query, (team_symbol, sport_id))
+            team_id = cur.fetchone()
+            if (team_id is None):
+                raise ValueError("No team found for sport %s and name '%s'" % (sport_id, team_symbol))
+            return team_id
+
 
 def get_sport_id_for_vendor(vendor_id, sport_name):
   """Finds the Sport ID for the given vendor_id/sport_name combo"""
