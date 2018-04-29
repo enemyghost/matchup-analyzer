@@ -33,17 +33,18 @@ CREATE TABLE IF NOT EXISTS game_data (
   sport_id integer,
   vendor_id integer,
   game_time_epoch_ms bigint,
-  home_team varchar,
-  away_team varchar,
-  UNIQUE (sport_id, game_time_epoch_ms, home_team, away_team)
+  home_team_id int REFERENCES team,
+  away_team_id int REFERENCES team,
+  UNIQUE (sport_id, game_time_epoch_ms, home_team_id, away_team_id)
 );
 
-CREATE TABLE IF NOT EXISTS team (
+CREATE TABLE IF NOT EXISTS team_alias_by_vendor (
     team_id serial PRIMARY KEY,
     team_symbol varchar(3),
     team_name varchar,
     team_name_full varchar,
-    sport_id integer,
+    sport_id integer REFERENCES sport,
+    vendor_id integer REFERENCES vendor,
     UNIQUE (team_symbol, sport_id)
 );
 

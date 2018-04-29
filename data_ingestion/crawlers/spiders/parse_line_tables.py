@@ -113,38 +113,46 @@ class LineOdds(object):
 #        return ' '.join([self.type, self.team_symbol, self.odds])
 
 def convert_string_line_to_line_object(string, type=None):
+    """Uses an optional Line type or regex match to convert a line item string into a
+    LineOdds object, or returns string if no match is found"""
 
-    money_line_regx = re.compile(r'^([A-Z]{3})([\+\-]\d+)$')
-    spread_regx     = re.compile(r'^([A-Z]{3})([\+\-]\d+\.?\d?)\s*([\-\+]\d+)$')
-    over_under_regx = re.compile(r'^(\d+\.?\d)\s*([\-\+]\d+)$')
-    half_regx       = re.compile(r'^([A-Z]{3})(XX|[\+\-]\d+\.?\d?)$')
-    no_data_regx    = re.compile(r'XX')
+    money_line_regx = re.compile(r'^([A-Z]{3})\s?([\+\-]\d+|XX)$')
+    spread_regx     = re.compile(r'^([A-Z]{3})(XX|[\+\-]\d+\.?\d?)\s*(XX|[\-\+]\d+)$')
+    over_under_regx = re.compile(r'^(\d+\.?\d|XX)\s*([\-\+]\d+|XX)$')
+    half_regx       = re.compile(r'^([A-Z]{3})(PK|XX|[\+\-]\d+\.?\d?)$')
 
     if type == "money_line" or re.search(money_line_regx, string):
         team_symbol, odds = re.findall(money_line_regx, string)[0]
         type = "money_line"
+
+        if odds == 'XX':
+            odds = None
         return LineOdds(type, team_symbol, odds)
 
     elif type == "spread" or re.search(spread_regx, string):
         team_symbol, spread, odds = re.findall(spread_regx, string)[0]
         type = "spread"
+        if spread == 'XX' or odds == 'XX':
+            spread, odds = None, None
         return LineOdds(type, team_symbol, odds, spread=spread)
 
     elif type == "over_under" or re.search(over_under_regx, string):
         over_under, odds = re.findall(over_under_regx, string)[0]
         type = "over_under"
+
+        if over_under == 'XX' or odds == 'XX':
+            odds, over_under = None, None
         return LineOdds(type, None, odds, over_under=over_under)
 
     elif type == "half" or re.search(half_regx, string):
         team_symbol, odds = re.findall(half_regx, string)[0]
         type = "half"
-        return LineOdds(type, team_symbol, odds)
 
-    elif re.search(no_data_regx, string):
-        team_symbol = re.findall(r'([A-Z]{3}|XX)\s?X{0,2}$', string)[0]
-        if team_symbol is not 'XX':
-            return LineOdds(None, team_symbol, None)
-        return LineOdds(None, None, None)
+        if odds == 'XX':
+            odds = None
+        if odds == 'PK':
+            odds = 0
+        return LineOdds(type, team_symbol, odds)
 
     elif string == '':
         return LineOdds(None, None, None)

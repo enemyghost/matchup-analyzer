@@ -53,12 +53,15 @@ def upsert_line_url(url = None, vendor_id = None, sport_id = None, sport_name = 
       cur.execute(query, (url, sport_id, vendor_id, event_time_epoch_ms, event_time_epoch_ms, url))
       conn.commit()
 
-def upsert_game_data(game_data = None, sport_id  =None, sport_name = None, vendor_id = None):
+def upsert_game_data(game_data = None, sport_id = None, sport_name = None, vendor_id = None):
   """ Upserts the given game_data into the line_data table"""
 
   if game_data is not None:
     vendor_id = vendor_id
     sport_id = sport_id
+    home_team_id = get_id_for_team(game_data.home_team, sport_id, vendor_id)
+    away_team_id = get_id_for_team(game_data.away_team, sport_id, vendor_id)
+    game_time_epoch_ms = game_data.game_timestamp
 
   if sport_id is None:
     if sport_name is None:
@@ -68,12 +71,11 @@ def upsert_game_data(game_data = None, sport_id  =None, sport_name = None, vendo
 
   with OddsConnection() as conn:
     with conn.cursor() as cur:
-      query = "INSERT INTO game_data (sport_id, vendor_id, game_time_epoch_ms, home_team, away_team) VALUES (%s, %s, %s, %s, %s) ON CONFLICT DO NOTHING RETURNING game_id;"
-      cur.execute(query, (sport_id, vendor_id, game_data.game_timestamp,  game_data.home_team, game_data.away_team))
+      query = "INSERT INTO game_data (sport_id, vendor_id, game_time_epoch_ms, home_team_id, away_team_id) VALUES (%s, %s, %s, %s, %s) ON CONFLICT DO NOTHING RETURNING game_id;"
+      cur.execute(query, (sport_id, vendor_id, game_time_epoch_ms,  home_team_id, away_team_id))
       conn.commit()
 
-
-      game_id = get_game_id(sport_id, vendor_id, game_data.game_timestamp, game_data.home_team)
+      game_id = get_game_id(sport_id, vendor_id, game_time_epoch_ms, home_team_id)
 
       for sportsbook_name, line_array in game_data.line_dict.items():
         query = "INSERT INTO sportsbook (sportsbook_name) VALUES (%s) ON CONFLICT DO NOTHING;"
@@ -83,8 +85,8 @@ def upsert_game_data(game_data = None, sport_id  =None, sport_name = None, vendo
         sportsbook_id = get_sportsbook_id(sportsbook_name)
         for line in line_array:
             line_snapshot_time_epoch_ms = int(float(line[0]))
-            fav_team_id = get_id_for_team(line[2].team_symbol, sport_id)
-            dog_team_id = get_id_for_team(line[3].team_symbol, sport_id)
+            fav_team_id = get_id_for_team(line[2].team_symbol, sport_id, vendor_id)
+            dog_team_id = get_id_for_team(line[3].team_symbol, sport_id, vendor_id)
             money_line_fav_odds = line[2].odds
             money_line_dog_odds = line[3].odds
             spread = line[4].spread
@@ -99,20 +101,20 @@ def upsert_game_data(game_data = None, sport_id  =None, sport_name = None, vendo
             cur.execute(query, (sportsbook_id, game_id, line_snapshot_time_epoch_ms, fav_team_id, dog_team_id, money_line_fav_odds, money_line_dog_odds, spread, spread_fav_odds, spread_dog_odds, over_under, over_odds, under_odds, fst_half_odds, snd_half_odds))
             conn.commit()
 
-def get_game_id(sport_id, vendor_id, game_timestamp, home_team):
+def get_game_id(sport_id, vendor_id, game_timestamp, home_team_id):
     with OddsConnection() as conn:
       with conn.cursor() as cur:
-        get_game_id_query ="SELECT game_id FROM game_data WHERE sport_id = %s AND vendor_id = %s AND game_time_epoch_ms = %s AND home_team = %s"
-        cur.execute(get_game_id_query, (sport_id, vendor_id, game_timestamp, home_team))
+        get_game_id_query ="SELECT game_id FROM game_data WHERE sport_id = %s AND vendor_id = %s AND game_time_epoch_ms = %s AND home_team_id = %s;"
+        cur.execute(get_game_id_query, (sport_id, vendor_id, game_timestamp, home_team_id))
         id_result = cur.fetchone()
         if (id_result is None):
-          raise ValueError("No game found for name")
+          raise ValueError("No game found for sport_id: %s vendor_id: %s game_timestamp: %s home_team_id: %s" % (sport_id, vendor_id, game_timestamp, home_team_id))
         return id_result[0]
 
 def get_sportsbook_id(sportsbook_name):
     with OddsConnection() as conn:
       with conn.cursor() as cur:
-        get_sportsbook_id_query ="SELECT sportsbook_id FROM sportsbook WHERE sportsbook_name = %s"
+        get_sportsbook_id_query ="SELECT sportsbook_id FROM sportsbook WHERE sportsbook_name = %s;"
         cur.execute(get_sportsbook_id_query, (sportsbook_name,))
         id_result = cur.fetchone()
 
@@ -121,14 +123,12 @@ def get_sportsbook_id(sportsbook_name):
 
         return id_result[0]
 
-def get_id_for_team(team_symbol, sport_id):
+def get_id_for_team(team, sport_id, vendor_id):
     with OddsConnection() as conn:
         with conn.cursor() as cur:
-            get_team_id_query = "SELECT team_id FROM team WHERE team_symbol = %s AND sport_id = %s"
-            cur.execute(get_team_id_query, (team_symbol, sport_id))
+            get_team_id_query = "SELECT team_id FROM team_alias_by_vendor WHERE sport_id = %s AND vendor_id = %s AND (team_symbol = %s OR team_name_full = %s OR team_name = %s);"
+            cur.execute(get_team_id_query, (sport_id, vendor_id, team, team, team))
             team_id = cur.fetchone()
-            if (team_id is None):
-                raise ValueError("No team found for sport %s and name '%s'" % (sport_id, team_symbol))
             return team_id
 
 
@@ -137,7 +137,7 @@ def get_sport_id_for_vendor(vendor_id, sport_name):
 
   with OddsConnection() as conn:
     with conn.cursor() as cur:
-      get_sport_id_query ="SELECT sport_id FROM sport_alias_by_vendor WHERE vendor_id = %s AND sport_alias = %s"
+      get_sport_id_query ="SELECT sport_id FROM sport_alias_by_vendor WHERE vendor_id = %s AND sport_alias = %s;"
       cur.execute(get_sport_id_query, (vendor_id, sport_name))
       id_result = cur.fetchone()
       if (id_result is None):
