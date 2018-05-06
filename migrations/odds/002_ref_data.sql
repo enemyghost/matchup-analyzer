@@ -21,6 +21,7 @@ INSERT INTO sport_alias_by_vendor (vendor_id, sport_id, sport_alias) VALUES
   (1, 6, 'nhl')
 ON CONFLICT DO NOTHING;
 
+--NBA team alias for Vegas Insider--
 INSERT INTO team_alias_by_vendor (team_symbol, team_name, team_name_full, sport_id, vendor_id) VALUES
 ('PHI', '76ers', 'Philadelphia 76ers', 2, 1),
 ('MIL', 'Bucks', 'Milwaukee Bucks', 2, 1),
