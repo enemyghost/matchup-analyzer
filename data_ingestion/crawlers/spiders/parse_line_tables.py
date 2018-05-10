@@ -18,7 +18,6 @@ class LinetablesSpider(scrapy.Spider):
         event date is null or greater than the given earliest_event_date_epoch_ms and returns parsed table as game_data object
         :param earliest_event_date_epoch_ms: urls after this date will be retreived
         :param sport: sport name string of urls to parse, if None will parse all urls in scheduling table
-        :param game_time: the time the game starts/ed
         :param html_tag: the html_tag to taget for table parsing, 'tbody' default for vegasinsider line movement pages
         :param class_dict: dictionary of css class:value to target for table parsing, default none for vegasinsider live movement pages
         :param parser: parser to use for html parsing, lxml default
@@ -29,8 +28,8 @@ class LinetablesSpider(scrapy.Spider):
         self.html_parser = HtmlParser(html_tag, class_dict, parser)
 
     def start_requests(self):
-        self.line_urls = odds_dao.get_line_urls(self.vendor_id, self.sport_id, self.earliest_event_date_epoch_ms)
-        for line_url in self.line_urls:
+        line_urls = odds_dao.get_line_urls(self.vendor_id, self.sport_id, self.earliest_event_date_epoch_ms)
+        for line_url in line_urls:
             yield scrapy.Request(url=line_url.url, callback=self.parse, meta={'line_url':line_url})
 
     def parse(self, response):
@@ -109,17 +108,14 @@ class LineOdds(object):
         self.spread = spread
         self.over_under = over_under
 
-#    def __repr__(self):
-#        return ' '.join([self.type, self.team_symbol, self.odds])
+money_line_regx = re.compile(r'^([A-Z]{3})\s?([\+\-]\d+|XX)$')
+spread_regx     = re.compile(r'^([A-Z]{3})(PK|XX|[\+\-]\d+\.?\d?)\s*(XX|[\-\+]\d+)$')
+over_under_regx = re.compile(r'^(\d+\.?\d|XX)\s*([\-\+]\d+|XX)$')
+half_regx       = re.compile(r'^([A-Z]{3})(PK|XX|[\+\-]\d+\.?\d?)$')
 
 def convert_string_line_to_line_object(string, type=None):
     """Uses an optional Line type or regex match to convert a line item string into a
     LineOdds object, or returns string if no match is found"""
-
-    money_line_regx = re.compile(r'^([A-Z]{3})\s?([\+\-]\d+|XX)$')
-    spread_regx     = re.compile(r'^([A-Z]{3})(XX|[\+\-]\d+\.?\d?)\s*(XX|[\-\+]\d+)$')
-    over_under_regx = re.compile(r'^(\d+\.?\d|XX)\s*([\-\+]\d+|XX)$')
-    half_regx       = re.compile(r'^([A-Z]{3})(PK|XX|[\+\-]\d+\.?\d?)$')
 
     if type == "money_line" or re.search(money_line_regx, string):
         team_symbol, odds = re.findall(money_line_regx, string)[0]
