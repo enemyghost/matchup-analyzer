@@ -109,7 +109,7 @@ class LineOdds(object):
         self.over_under = over_under
 
 money_line_regx = re.compile(r'^([A-Z]{3})\s?([\+\-]\d+|XX)$')
-spread_regx     = re.compile(r'^([A-Z]{3})(PK|XX|[\+\-]\d+\.?\d?)\s*(XX|[\-\+]\d+)$')
+spread_regx     = re.compile(r'^([A-Z]{3})(PK|XX|[\+\-]?\d+\.?\d?)\s*(XX|[\-\+]\d+)$')
 over_under_regx = re.compile(r'^(\d+\.?\d|XX)\s*([\-\+]\d+|XX)$')
 half_regx       = re.compile(r'^([A-Z]{3})(PK|XX|[\+\-]\d+\.?\d?)$')
 
@@ -130,6 +130,8 @@ def convert_string_line_to_line_object(string, type=None):
         type = "spread"
         if spread == 'XX' or odds == 'XX':
             spread, odds = None, None
+        if spread == 'PK':
+            spread = 0
         return LineOdds(type, team_symbol, odds, spread=spread)
 
     elif type == "over_under" or re.search(over_under_regx, string):

@@ -42,7 +42,7 @@ CREATE TABLE IF NOT EXISTS team_alias_by_vendor (
     team_symbol varchar(3),
     team_name varchar,
     team_name_full varchar,
-    sport_id integer REFERENCES sport_alias_by_vendor,
+    sport_id integer REFERENCES sport,
     vendor_id integer REFERENCES vendor,
     UNIQUE (team_symbol, sport_id)
 );
