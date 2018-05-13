@@ -109,11 +109,7 @@ class LineOdds(object):
         self.over_under = over_under
 
 money_line_regx = re.compile(r'^([A-Z]{3})\s?([\+\-]\d+|XX)$')
-<<<<<<< HEAD
 spread_regx     = re.compile(r'^([A-Z]{3})(PK|XX|[\+\-]?\d+\.?\d?)\s*(XX|[\-\+]\d+)$')
-=======
-spread_regx     = re.compile(r'^([A-Z]{3})(PK|XX|[\+\-]\d+\.?\d?)\s*(XX|[\-\+]\d+)$')
->>>>>>> 38db21f406f702e17e7bc2089354e828eaf00fb6
 over_under_regx = re.compile(r'^(\d+\.?\d|XX)\s*([\-\+]\d+|XX)$')
 half_regx       = re.compile(r'^([A-Z]{3})(PK|XX|[\+\-]\d+\.?\d?)$')
 

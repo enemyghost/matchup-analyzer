@@ -24,6 +24,7 @@ var/
 .installed.cfg
 *.egg
 bin/
+matchup-analyzer/
 
 # PyInstaller
 #  Usually these files are written by a python script from a template
