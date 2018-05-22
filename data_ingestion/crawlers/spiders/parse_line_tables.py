@@ -88,16 +88,48 @@ def to_game_data(table_list):
     naive_game_time = dt.datetime.strptime(game_time_str, "%I:%M %p").time()
     game_date = dt.datetime.strptime(game_date_str, "%A, %B %d, %Y")
     tz = pytz.timezone('US/Eastern')
-    game_naive_datetime = dt.datetime(game_date.year,
-                                            game_date.month,
-                                            game_date.day,
-                                            naive_game_time.hour,
-                                            naive_game_time.minute,
-                                            )
+    game_naive_datetime = dt.datetime(
+    game_date.year,
+    game_date.month,
+    game_date.day,
+    naive_game_time.hour,
+    naive_game_time.minute,
+    )
     game_datetime = tz.localize(game_naive_datetime)
     game_timestamp_ms = game_datetime.timestamp() * 1000
     line_dict = convert_line_times_to_timestamps(create_dict(table_list), game_datetime)
     return GameData(home_team, away_team, game_datetime, game_timestamp_ms, line_dict)
+
+def create_dict(table_list):
+    """Creates dictionary {'Sportsbook name':array of line movements}
+    removes headers from table.
+    """
+    line_dict = {}
+    for table in table_list[2:]:
+        if len(table[0]) == 1:
+            sportsbook_name = table[0][0][:-15].strip()
+        line_table = np.array(table[2:])
+        line_dict[sportsbook_name] = line_table
+    return line_dict
+
+def convert_line_times_to_timestamps(line_dict, game_datetime):
+    line_snapshot_year = game_datetime.year
+    tz = pytz.timezone('US/Eastern')
+    for sportsbook_name, line_table in line_dict.items():
+        for line in line_table:
+            line_snapshot_month_str, line_snapshot_day_str = line[0].split(r"/")
+            line_snapshot_time_str = line[1]
+            line_snapshot_time = dt.datetime.strptime(line_snapshot_time_str, "%I:%M%p").time()
+            line_snapshot_datetime = dt.datetime(
+            line_snapshot_year,
+            int(line_snapshot_month_str),
+            int(line_snapshot_day_str),
+            line_snapshot_time.hour,
+            line_snapshot_time.minute
+            )
+            tz.localize(line_snapshot_datetime)
+            line[0] = line_snapshot_datetime.timestamp() * 1000 #Convert to ms
+    return line_dict
 
 class Odds(object):
 
@@ -108,15 +140,14 @@ class Odds(object):
         self.spread = spread
         self.total = total
 
+
+#Regex for matching bet types from raw html
 money_line_regx = re.compile(r'^([A-Z]{3})\s?([\+\-]\d+|XX)$')
 spread_regx     = re.compile(r'^([A-Z]{3})(PK|XX|[\+\-]?\d+\.?\d?)\s*(XX|[\-\+]\d+)$')
-total_regx = re.compile(r'^(\d+\.?\d|XX)\s*([\-\+]\d+|XX)$')
+total_regx      = re.compile(r'^(\d+\.?\d|XX)\s*([\-\+]\d+|XX)$')
 half_regx       = re.compile(r'^([A-Z]{3})(PK|XX|[\+\-]\d+\.?\d?)$')
 
 def convert_bet_table_to_bet_objects(line_dict):
-    """Uses an optional Line type or regex match to convert a line item string into a
-    LineOdds object, or returns string if no match is found"""
-
     odds_dict = {}
 
     for sportsbook, bet_table in line_dict.items():
@@ -139,7 +170,6 @@ def convert_string_bet_to_bet_object(string, type=None):
     if type == "money_line" or re.search(money_line_regx, string):
         team_symbol, odds = re.findall(money_line_regx, string)[0]
         type = "money_line"
-
         if odds == 'XX':
             odds = None
         return type, team_symbol, odds
@@ -156,7 +186,6 @@ def convert_string_bet_to_bet_object(string, type=None):
     elif type == "total" or re.search(total_regx, string):
         total, odds = re.findall(total_regx, string)[0]
         type = "total"
-
         if total == 'XX' or odds == 'XX':
             odds, over_under = None, None
         return type, None, odds, total
@@ -164,13 +193,11 @@ def convert_string_bet_to_bet_object(string, type=None):
     elif type == "half" or re.search(half_regx, string):
         team_symbol, odds = re.findall(half_regx, string)[0]
         type = "half"
-
         if odds == 'XX':
             odds = None
         if odds == 'PK':
             odds = 0
         return type, team_symbol, odds
-
     elif string == '':
         return None
     return string
@@ -188,33 +215,3 @@ class GameData(object):
         self.game_datetime = game_datetime
         self.game_timestamp = game_timestamp_ms
         self.line_dict = line_dict
-
-def convert_line_times_to_timestamps(line_dict, game_datetime):
-    line_snapshot_year = game_datetime.year
-    tz = pytz.timezone('US/Eastern')
-    for sportsbook_name, line_table in line_dict.items():
-        for line in line_table:
-            line_snapshot_month_str, line_snapshot_day_str = line[0].split(r"/")
-            line_snapshot_time_str = line[1]
-            line_snapshot_time = dt.datetime.strptime(line_snapshot_time_str, "%I:%M%p").time()
-            line_snapshot_datetime = dt.datetime(line_snapshot_year,
-                                                 int(line_snapshot_month_str),
-                                                 int(line_snapshot_day_str),
-                                                 line_snapshot_time.hour,
-                                                 line_snapshot_time.minute
-                                                 )
-            tz.localize(line_snapshot_datetime)
-            line[0] = line_snapshot_datetime.timestamp() * 1000 #Convert to ms
-    return line_dict
-
-def create_dict(table_list):
-    """Creates dictionary {'Sportsbook name':array of line movements}
-    removes headers from table.
-    """
-    line_dict = {}
-    for table in table_list[2:]:
-        if len(table[0]) == 1:
-            sportsbook_name = table[0][0][:-15].strip()
-        line_table = np.array(table[2:])
-        line_dict[sportsbook_name] = line_table
-    return line_dict
