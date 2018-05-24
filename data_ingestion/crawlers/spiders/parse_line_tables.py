@@ -6,7 +6,7 @@ import numpy as np
 import datetime as dt
 import pytz
 import re
-from data_ingestion.dao import odds_dao
+from data_ingestion.dao import odds_store
 
 class VILinetablesSpider(scrapy.Spider):
     name = 'parse_line_tables'
@@ -23,12 +23,12 @@ class VILinetablesSpider(scrapy.Spider):
         :param parser: parser to use for html parsing, lxml default
         '''
         self.earliest_event_date_epoch_ms = earliest_event_date_epoch_ms
-        self.sport_id = odds_dao.get_sport_id_for_vendor(vendor_id, sport) if sport is not None else None
+        self.sport_id = odds_store.get_sport_id_for_vendor(vendor_id, sport) if sport is not None else None
         self.vendor_id = vendor_id
         self.html_parser = HtmlParser(html_tag, class_dict, parser)
 
     def start_requests(self):
-        line_urls = odds_dao.get_line_urls(self.vendor_id, self.sport_id, self.earliest_event_date_epoch_ms)
+        line_urls = odds_store.get_line_urls(self.vendor_id, self.sport_id, self.earliest_event_date_epoch_ms)
         for line_url in line_urls:
             yield scrapy.Request(url=line_url.url, callback=self.parse, meta={'line_url':line_url})
 
