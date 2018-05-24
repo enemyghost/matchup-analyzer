@@ -8,7 +8,7 @@ import pytz
 import re
 from data_ingestion.dao import odds_dao
 
-class LinetablesSpider(scrapy.Spider):
+class VILinetablesSpider(scrapy.Spider):
     name = 'parse_line_tables'
     allowed_domains = ['www.vegasinsider.com/']
 
@@ -69,7 +69,7 @@ class HtmlParser(object):
 
                 for row in rows:
                     cols = row.find_all('td')
-                    table_data.append([convert_string_line_to_line_object(ele.get_text(strip=True)) for ele in cols])
+                    table_data.append([ele.get_text(strip=True) for ele in cols])
                 table_list.append(table_data)
 
         return to_game_data(table_list)
@@ -89,41 +89,59 @@ def to_game_data(table_list):
     game_date = dt.datetime.strptime(game_date_str, "%A, %B %d, %Y")
     tz = pytz.timezone('US/Eastern')
     game_naive_datetime = dt.datetime(game_date.year,
-                                            game_date.month,
-                                            game_date.day,
-                                            naive_game_time.hour,
-                                            naive_game_time.minute,
-                                            )
+                                      game_date.month,
+                                      game_date.day,
+                                      naive_game_time.hour,
+                                      naive_game_time.minute)
     game_datetime = tz.localize(game_naive_datetime)
     game_timestamp_ms = game_datetime.timestamp() * 1000
     line_dict = convert_line_times_to_timestamps(create_dict(table_list), game_datetime)
     return GameData(home_team, away_team, game_datetime, game_timestamp_ms, line_dict)
 
-class LineOdds(object):
+class Odds(object):
 
-    def __init__(self, type, team_symbol, odds, spread=None, over_under=None):
+    def __init__(self, type, team_symbol, odds, spread=None, total=None):
         self.type = type
         self.team_symbol = team_symbol
         self.odds = odds
         self.spread = spread
-        self.over_under = over_under
+        self.total = total
 
 money_line_regx = re.compile(r'^([A-Z]{3})\s?([\+\-]\d+|XX)$')
 spread_regx     = re.compile(r'^([A-Z]{3})(PK|XX|[\+\-]?\d+\.?\d?)\s*(XX|[\-\+]\d+)$')
-over_under_regx = re.compile(r'^(\d+\.?\d|XX)\s*([\-\+]\d+|XX)$')
+total_regx = re.compile(r'^(\d+\.?\d|XX)\s*([\-\+]\d+|XX)$')
 half_regx       = re.compile(r'^([A-Z]{3})(PK|XX|[\+\-]\d+\.?\d?)$')
 
-def convert_string_line_to_line_object(string, type=None):
+def convert_bet_table_to_bet_objects(line_dict):
     """Uses an optional Line type or regex match to convert a line item string into a
     LineOdds object, or returns string if no match is found"""
 
+    odds_dict = {}
+
+    for sportsbook, bet_table in line_dict.items():
+        odds_table = []
+        for row in bet_table:
+            snapshot_timestamp = row[0]
+            fav_money_line = convert_string_bet_to_bet_object(row[2], "money_line")
+            dog_money_line = convert_string_bet_to_bet_object(row[3], "money_line")
+            fav_spread = convert_string_bet_to_bet_object(row[4], "spread")
+            dog_spread = convert_string_bet_to_bet_object(row[5], "spread")
+            fav_total = convert_string_bet_to_bet_object(row[6], "total")
+            dog_total = convert_string_bet_to_bet_object(row[7], "total")
+            fav_fst_half = convert_string_bet_to_bet_object(row[8], "half")
+            dog_fst_half = convert_string_bet_to_bet_object(row[9], "half")
+            fav_snd_half = convert_string_bet_to_bet_object(row[10], "half")
+            dog_snd_half = convert_string_bet_to_bet_object(row[11], "half")
+            odds_dict[sportsbook] = odds_table
+
+def convert_string_bet_to_bet_object(string, type=None):
     if type == "money_line" or re.search(money_line_regx, string):
         team_symbol, odds = re.findall(money_line_regx, string)[0]
         type = "money_line"
 
         if odds == 'XX':
             odds = None
-        return LineOdds(type, team_symbol, odds)
+        return type, team_symbol, odds
 
     elif type == "spread" or re.search(spread_regx, string):
         team_symbol, spread, odds = re.findall(spread_regx, string)[0]
@@ -132,15 +150,15 @@ def convert_string_line_to_line_object(string, type=None):
             spread, odds = None, None
         if spread == 'PK':
             spread = 0
-        return LineOdds(type, team_symbol, odds, spread=spread)
+        return type, team_symbol, odds, spread
 
-    elif type == "over_under" or re.search(over_under_regx, string):
-        over_under, odds = re.findall(over_under_regx, string)[0]
-        type = "over_under"
+    elif type == "total" or re.search(total_regx, string):
+        total, odds = re.findall(total_regx, string)[0]
+        type = "total"
 
-        if over_under == 'XX' or odds == 'XX':
+        if total == 'XX' or odds == 'XX':
             odds, over_under = None, None
-        return LineOdds(type, None, odds, over_under=over_under)
+        return type, None, odds, total
 
     elif type == "half" or re.search(half_regx, string):
         team_symbol, odds = re.findall(half_regx, string)[0]
@@ -150,11 +168,10 @@ def convert_string_line_to_line_object(string, type=None):
             odds = None
         if odds == 'PK':
             odds = 0
-        return LineOdds(type, team_symbol, odds)
+        return type, team_symbol, odds
 
     elif string == '':
-        return LineOdds(None, None, None)
-
+        return None
     return string
 
 class GameData(object):
@@ -183,8 +200,7 @@ def convert_line_times_to_timestamps(line_dict, game_datetime):
                                                  int(line_snapshot_month_str),
                                                  int(line_snapshot_day_str),
                                                  line_snapshot_time.hour,
-                                                 line_snapshot_time.minute
-                                                 )
+                                                 line_snapshot_time.minute)
             tz.localize(line_snapshot_datetime)
             line[0] = line_snapshot_datetime.timestamp() * 1000 #Convert to ms
     return line_dict
