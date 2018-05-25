@@ -77,14 +77,14 @@ class OddsUpdateBuilder:
         self.odds_map = {}
 
     def add_odds(self, timestamp, odds):
-        if (odds.meta.sportsbook not in self.odds_map):
+        if odds.meta.sportsbook not in self.odds_map:
             self.odds_map[odds.meta.sportsbook] = {}
         sb_map = self.odds_map[odds.meta.sportsbook]
-        if (odds.specific_type() not in sb_map):
+        if odds.specific_type() not in sb_map:
             sb_map[odds.specific_type()] = [OddsOffering(timestamp, odds)]
         else:
             odds_list = sb_map[odds.specific_type()]
-            if (odds_list[-1].odds != odds):
+            if odds_list[-1].odds != odds:
                 odds_list.append(OddsOffering(timestamp, odds))
 
     def build(self):
