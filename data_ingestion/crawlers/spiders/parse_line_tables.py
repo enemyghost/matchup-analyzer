@@ -12,20 +12,17 @@ class VILinetablesSpider(scrapy.Spider):
     name = 'parse_line_tables'
     allowed_domains = ['www.vegasinsider.com/']
 
-    def __init__(self, sport=None, vendor_id=1, earliest_event_date_epoch_ms=0, html_tag='tbody', class_dict={}, parser='lxml'):
+    def __init__(self, sport=None, vendor_id=1, earliest_event_date_epoch_ms=0):
         '''Takes a sport, vendor_id, earliest_even_date_epoc_ms, optional html_tag, class_dict and parser,
         Gets all urls from the line_url_scheduling table for the given vendor_id and sport_id, where the
         event date is null or greater than the given earliest_event_date_epoch_ms and returns parsed table as game_data object
         :param earliest_event_date_epoch_ms: urls after this date will be retreived
         :param sport: sport name string of urls to parse, if None will parse all urls in scheduling table
-        :param html_tag: the html_tag to taget for table parsing, 'tbody' default for vegasinsider line movement pages
-        :param class_dict: dictionary of css class:value to target for table parsing, default none for vegasinsider live movement pages
-        :param parser: parser to use for html parsing, lxml default
         '''
         self.earliest_event_date_epoch_ms = earliest_event_date_epoch_ms
         self.sport_id = odds_store.get_sport_id_for_vendor(vendor_id, sport) if sport is not None else None
         self.vendor_id = vendor_id
-        self.html_parser = HtmlParser(html_tag, class_dict, parser)
+        self.line_table_parser = LineTableParser()
 
     def start_requests(self):
         line_urls = odds_store.get_line_urls(self.vendor_id, self.sport_id, self.earliest_event_date_epoch_ms)
@@ -33,7 +30,7 @@ class VILinetablesSpider(scrapy.Spider):
             yield scrapy.Request(url=line_url.url, callback=self.parse, meta={'line_url':line_url})
 
     def parse(self, response):
-        game_data = self.html_parser.get_tables(response.body)
+        game_data = self.line_table_parser.get_tables(response.body)
         sport_id = response.request.meta['line_url'].sport_id
         yield {'game_data':game_data, 'sport_id': sport_id, 'vendor_id': self.vendor_id, 'url': response.request.url}
 
@@ -41,38 +38,42 @@ class VILinetablesSpider(scrapy.Spider):
 class SoupFactory(object):
     """Creates a soup factory object based on the parser chosen, get returns html soup via beautifulsoup"""
 
-    def __init__(self, parser):
+    def __init__(self, parser='lxml'):
         self.parser = parser
 
     def get(self, raw_html):
         return bs(raw_html, self.parser)
 
 
-class HtmlParser(object):
-    """Parses html soup for html_tag and optional class:value dict"""
+class LineTableParser(object):
+    """Parses html soup from VI line table pages, strips values from the table and
+        returns them to a GameData object for extraction"""
 
-    def __init__(self, html_tag, class_dict, parser):
+    def __init__(self, html_tag='tbody', class_dict={}, parser='lxml'):
         self.html_tag = html_tag
         self.class_dict = class_dict
         self.soup_factory = SoupFactory(parser)
 
     def get_tables(self, raw_html):
-        """Takes raw_html from line movement pages, strips all data from table and returns gamedata object"""
+        """Takes raw_html from line movement pages, strips all data from table and returns an array of table data"""
+
         soup = self.soup_factory.get(raw_html)
+        print("soup object is type", type(soup))
         find_tables = soup.find_all(self.html_tag, self.class_dict)
+        print("These tables were found %s" % find_tables)
         table_list = []
 
         for table in find_tables:
             if is_deepest_table(table, self.html_tag, self.class_dict):
                 table_data = []
                 rows = table.find_all('tr')
-
                 for row in rows:
                     cols = row.find_all('td')
                     table_data.append([ele.get_text(strip=True) for ele in cols])
                 table_list.append(table_data)
+        return table_list
 
-        return to_game_data(table_list)
+#send table list to game data
 
 def is_deepest_table(table_soup, html_tag, class_dict):
     """Returns True if no child tables exist"""
