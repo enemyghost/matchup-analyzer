@@ -56,7 +56,7 @@ class TotalOdds:
         return isinstance(other, self.__class__) and self.meta == other.meta and self.total == other.total
 
     def __str__(self):
-        return "{{ {}, total: {} }}".format(self.meta, self.team, self.total)
+        return "{{ {}, total: {} }}".format(self.meta, self.total)
 
     def specific_type(self):
         return self.meta.type
