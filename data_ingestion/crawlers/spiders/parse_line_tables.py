@@ -28,8 +28,10 @@ class VILinetablesSpider(scrapy.Spider):
             yield scrapy.Request(url=line_url.url, callback=self.parse, meta={'line_url':line_url})
 
     def parse(self, response):
-        game_data = self.game_data_factory(response.body, sport_id, vendor_id)
         sport_id = response.request.meta['line_url'].sport_id
+        vendor_id = response.request.meta['line_url'].vendor_id
+        game_data_factory = GameDataFactory(sport_id, vendor_id)
+        game_data = game_data_factory.build_game_data(response.body)
         yield {'game_data':game_data, 'url': response.request.url}
 
 class GameData(object):
@@ -156,7 +158,7 @@ def is_deepest_table(table, html_tag, class_dict):
     return False
 
 money_line_regx = re.compile(r'^([A-Z]{3})\s?([\+\-]\d+|XX)$')
-spread_regx     = re.compile(r'^([A-Z]{3})(PK|XX|[\+\-]?\d+\.?\d?)\s*(XX|[\-\+]\d+)$')
+spread_regx     = re.compile(r'^([A-Z]{3})|(PK|XX|[\+\-]?\d+\.?\d?)\s*(XX|[\-\+]\d+)$')
 total_regx      = re.compile(r'^(\d+\.?\d|XX)\s*([\-\+]\d+|XX)$')
 half_regx       = re.compile(r'^([A-Z]{3})(PK|XX|[\+\-]\d+\.?\d?)$')
 
@@ -179,7 +181,7 @@ def convert_string_odds_to_odds_object(string, sportsbook, type):
 
     elif type == "spread":
         team_symbol, spread, odds = re.findall(spread_regx, string)[0]
-        if spread == 'XX' or odds == 'XX':
+        if spread in ['', None, 'XX'] or odds in ['', None, 'XX']:
             return None
         if spread == 'PK':
             spread = 0

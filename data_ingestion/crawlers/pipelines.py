@@ -13,6 +13,7 @@ class PostgresPipeline(object):
         return item
 
     if spider.name == 'parse_line_tables':
-        odds_store.upsert_game_data(vendor_id=item['vendor_id'], sport_id=item['sport_id'], game_data=item['game_data'])
-        odds_store.upsert_line_url(url=item['url'], vendor_id=item['vendor_id'], sport_id=item['sport_id'], event_time_epoch_ms=item['game_data'].game_timestamp)
+        game_data = item['game_data']
+        odds_store.upsert_game_data(vendor_id=game_data.vendor_id, sport_id=game_data.sport_id, game_data=game_data)
+        odds_store.upsert_line_url(url=item['url'], vendor_id=game_data.vendor_id, sport_id=game_data.sport_id, event_time_epoch_ms=game_data.game_timestamp)
         return item
