@@ -185,6 +185,7 @@ def convert_string_odds_to_odds_object(string, sportsbook, type):
             return None
         if spread == 'PK':
             spread = 0
+
         return odds_entities.SpreadOdds(sportsbook, int(odds), team_symbol, float(spread))
 
     elif type == "total_over":
@@ -203,12 +204,14 @@ def convert_string_odds_to_odds_object(string, sportsbook, type):
 
     elif type == "half":
         return None #temp fix until half bet types handled in odds_entities
+      
         team_symbol, odds = re.findall(half_regx, string)[0]
         type = "half"
         if odds == 'XX':
             return None
         if odds == 'PK':
             odds = 0
+            
         return odds_entities.MoneyLineOdds(sportsbook, float(odds), team_symbol)
 
     else:

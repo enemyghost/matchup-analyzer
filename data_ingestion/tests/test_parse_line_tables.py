@@ -1,4 +1,3 @@
-import unittest
 import sys, os
 from data_ingestion.crawlers.spiders import parse_line_tables as parser
 from bs4 import BeautifulSoup as bs
@@ -44,6 +43,9 @@ class Test_LineTableParser(unittest.TestCase):
                 tables = soup.find_all('tbody')
                 print(html_parser, "found:", len(tables), "tables")
 
+
+    def test(self):
+        self.assertEqual(output.away_team, "Boston Celtics")
 
 if __name__ == '__main__':
      unittest.main()
