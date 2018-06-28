@@ -2,7 +2,7 @@
 import scrapy
 from datetime import datetime, timedelta
 
-class LineLinksSpider(scrapy.Spider):
+class VILineURLSpider(scrapy.Spider):
     name = 'get_line_urls'
 
     def __init__(self, sport, start_date, end_date, season_year=None):
