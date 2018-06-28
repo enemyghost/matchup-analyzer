@@ -10,7 +10,7 @@ class VILinetablesSpider(scrapy.Spider):
     name = 'parse_line_tables'
     allowed_domains = ['www.vegasinsider.com/']
 
-    def __init__(self, sport=None, vendor_id=1, earliest_event_date_epoch_ms=0):
+    def __init__(self, sport, vendor_id=1, earliest_event_date_epoch_ms=0):
         '''Takes a sport, vendor_id, earliest_even_date_epoc_ms, optional html_tag, class_dict and parser,
         Gets all urls from the line_url_scheduling table for the given vendor_id and sport_id, where the
         event date is null or greater than the given earliest_event_date_epoch_ms and returns parsed table as game_data object
@@ -25,13 +25,13 @@ class VILinetablesSpider(scrapy.Spider):
     def start_requests(self):
         line_urls = odds_store.get_line_urls(self.vendor_id, self.sport_id, self.earliest_event_date_epoch_ms)
         for line_url in line_urls:
-            yield scrapy.Request(url=line_url.url, callback=self.parse, meta={'line_url':line_url})
+            yield scrapy.Request(url=line_url.url, callback=self.parse, meta={'line_url':line_url)
 
     def parse(self, response):
-        sport_id = response.request.meta['line_url'].sport_id
-        vendor_id = response.request.meta['line_url'].vendor_id
-        game_data_factory = GameDataFactory(sport_id, vendor_id)
-        game_data = game_data_factory.build_game_data(response.body)
+        line_url = response.request.meta['line_url']
+        sport_id = line_url.sport_id
+        vendor_id = line_url.vendor_id
+        game_data = self.game_data_factory.build_game_data(response.body)
         yield {'game_data':game_data, 'url': response.request.url}
 
 class GameData(object):
