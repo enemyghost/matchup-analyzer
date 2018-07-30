@@ -34,9 +34,9 @@ ON CONFLICT DO NOTHING;
 INSERT INTO sportsbook (sportsbook_id, sportsbook_name) VALUES
   (1, 'VI Consensus'),
   (2, 'Atlantis'),
-  (3, 'Caesars'),
+  (3, 'Caesars/Harrah''s),
   (4, 'CG Technology'),
-  (5, 'Coasts Line'),
+  (5, 'Coasts'),
   (6, 'Golden Nugget'),
   (7, 'Peppermill'),
   (8, 'Southpoint'),
@@ -65,7 +65,10 @@ INSERT INTO sportsbook (sportsbook_id, sportsbook_name) VALUES
   (31, 'SportsInteraction'),
   (32, 'The Greek'),
   (33, 'topbet.com'),
-  (34, 'youwager.eu')
+  (34, 'youwager.eu'),
+  (35, 'Jerry''s Nugget'),
+  (36, 'Mirage-MGM'),
+  (37, 'Wynn')
 ON CONFLICT DO NOTHING;
 
 INSERT INTO sportsbook_alias (sportsbook_alias_id, sportsbook_id, sportsbook_alias)
@@ -130,11 +133,11 @@ INSERT INTO team (team_id, sport_id, venue_id, symbol, nickname) VALUES
   (16, 2, 16, 'DEN', 'Denver Nuggets'),
   (17, 2, 17, 'ATL', 'Atlanta Hawks'),
   (18, 2, 18, 'CLE', 'Cleveland Cavaliers'),
-  (19, 2, 19, 'NOP', 'New Orleans Pelicans'),
+  (19, 2, 19, 'NOR', 'New Orleans Pelicans'),
   (20, 2, 20, 'CHA', 'Charlotte Hornets'),
   (21, 2, 21, 'LAC', 'Los Angeles Clippers'),
   (22, 2, 22, 'LAL', 'Los Angeles Lakers'),
-  (23, 2, 23, 'PHX', 'Phoenix Suns'),
+  (23, 2, 23, 'PHO', 'Phoenix Suns'),
   (24, 2, 24, 'MIN', 'Minnesota Timberwolves'),
   (25, 2, 25, 'BOS', 'Boston Celtics'),
   (26, 2, 26, 'HOU', 'Houston Rockets'),
@@ -199,7 +202,7 @@ INSERT INTO team_alias (team_alias_id, team_id, team_alias) VALUES
   (52, 18, 'CLE'),
   (53, 18, 'Cleveland Cavaliers'),
   (54, 18, 'Cavaliers'),
-  (55, 19, 'NOP'),
+  (55, 19, 'NOR'),
   (56, 19, 'New Orleans Pelicans'),
   (57, 19, 'Pelicans'),
   (58, 20, 'CHA'),
@@ -211,7 +214,7 @@ INSERT INTO team_alias (team_alias_id, team_id, team_alias) VALUES
   (64, 22, 'LAL'),
   (65, 22, 'Los Angeles Lakers'),
   (66, 22, 'Lakers'),
-  (67, 23, 'PHX'),
+  (67, 23, 'PHO'),
   (68, 23, 'Phoenix Suns'),
   (69, 23, 'Suns'),
   (70, 24, 'MIN'),
@@ -234,7 +237,8 @@ INSERT INTO team_alias (team_alias_id, team_id, team_alias) VALUES
   (87, 29, '76ers'),
   (88, 30, 'MIL'),
   (89, 30, 'Milwaukee Bucks'),
-  (90, 30, 'Bucks')
+  (90, 30, 'Bucks'),
+  (91, 7, 'NJN')
 ON CONFLICT DO NOTHING;
 
 INSERT INTO team_alias_by_vendor (team_alias_id, vendor_id) VALUES
@@ -327,5 +331,13 @@ INSERT INTO team_alias_by_vendor (team_alias_id, vendor_id) VALUES
   (87, 1),
   (88, 1),
   (89, 1),
-  (90, 1)
+  (90, 1),
+  (91, 1)
+ON CONFLICT DO NOTHING;
+
+INSERT INTO odds_type (odds_type_id, odds_type_name, odds_type_abbreviation) VALUES
+  (1, 'MONEY_LINE', 'ML'),
+  (2, 'SPREAD', 'SPREAD'),
+  (3, 'UNDER', 'UNDER'),
+  (4, 'OVER', 'OVER')
 ON CONFLICT DO NOTHING;

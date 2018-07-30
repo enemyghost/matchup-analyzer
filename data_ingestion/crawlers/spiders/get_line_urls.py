@@ -16,7 +16,7 @@ class VILineURLSpider(scrapy.Spider):
         list_of_urls = []
 
         if self.sport == 'nba':
-            for date in date_range:
+            for date in date_range(self.start_date, self.end_date):
                 list_of_urls.append("{}{}/scoreboard/scores.cfm/game_date/{}".format(domain, self.sport, date))
             return list_of_urls
 
@@ -44,8 +44,6 @@ def week_range(start_week, end_week):
         elif curr_week > 0:
             yield curr_week
         curr_week += 1
-
-
 
 def date_range(start, end, step=1, date_format="%m-%d-%Y"):
     """

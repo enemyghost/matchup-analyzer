@@ -18,14 +18,14 @@ class VILinetablesSpider(scrapy.Spider):
         :param sport: sport name string of urls to parse, if None will parse all urls in scheduling table
         '''
         self.earliest_event_date_epoch_ms = earliest_event_date_epoch_ms
-        self.sport_id = odds_store.get_sport_id_for_vendor(vendor_id, sport) if sport is not None else None
+        self.sport_id = odds_store.get_sport_id_for_alias(sport, vendor_id) if sport is not None else None
         self.vendor_id = vendor_id
         self.game_data_factory = GameDataFactory(self.sport_id, self.vendor_id, html_parser='lxml')
 
     def start_requests(self):
         line_urls = odds_store.get_line_urls(self.vendor_id, self.sport_id, self.earliest_event_date_epoch_ms)
         for line_url in line_urls:
-            yield scrapy.Request(url=line_url.url, callback=self.parse, meta={'line_url':line_url)
+            yield scrapy.Request(url=line_url.url, callback=self.parse, meta={'line_url':line_url})
 
     def parse(self, response):
         line_url = response.request.meta['line_url']
@@ -204,14 +204,14 @@ def convert_string_odds_to_odds_object(string, sportsbook, type):
 
     elif type == "half":
         return None #temp fix until half bet types handled in odds_entities
-      
+
         team_symbol, odds = re.findall(half_regx, string)[0]
         type = "half"
         if odds == 'XX':
             return None
         if odds == 'PK':
             odds = 0
-            
+
         return odds_entities.MoneyLineOdds(sportsbook, float(odds), team_symbol)
 
     else:

@@ -3,11 +3,6 @@ CREATE TABLE IF NOT EXISTS vendor (
   vendor_name varchar(1024) NOT NULL UNIQUE
 );
 
-CREATE TABLE IF NOT EXISTS sport (
-  sport_id integer PRIMARY KEY,
-  sport_name varchar(1024) NOT NULL UNIQUE
-);
-
 CREATE TABLE IF NOT EXISTS venue (
   venue_id integer PRIMARY KEY,
   venue_name varchar(1024) NOT NULL,
@@ -15,6 +10,11 @@ CREATE TABLE IF NOT EXISTS venue (
   image_location varchar(2000),
   capacity integer,
   year_opened integer
+);
+
+CREATE TABLE IF NOT EXISTS sport (
+  sport_id integer PRIMARY KEY,
+  sport_name varchar(1024) NOT NULL UNIQUE
 );
 
 CREATE TABLE IF NOT EXISTS sport_alias (
@@ -48,13 +48,6 @@ CREATE TABLE IF NOT EXISTS team_alias_by_vendor (
   team_alias_id integer REFERENCES team_alias,
   vendor_id integer REFERENCES vendor,
   PRIMARY KEY(team_alias_id, vendor_id)
-);
-
-CREATE TABLE IF NOT EXISTS line_url_scheduling (
-  normalized_url varchar(2000) PRIMARY KEY,
-  sport_id integer NOT NULL REFERENCES sport,
-  vendor_id integer NOT NULL REFERENCES vendor,
-  event_time_epoch_ms bigint
 );
 
 CREATE TABLE IF NOT EXISTS sportsbook (
@@ -98,24 +91,32 @@ CREATE TABLE IF NOT EXISTS odds (
   game_id uuid REFERENCES game,
   offered_time_epoch_ms bigint NOT NULL,
   odds integer NOT NULL,
-  UNIQUE (odds_type_id, vendor_id, sportsbook_id, game_id, offered_time_epoch_ms)
+  half integer DEFAULT NULL,
+  UNIQUE (odds_type_id, vendor_id, sportsbook_id, game_id, half, offered_time_epoch_ms)
 );
 
 CREATE TABLE IF NOT EXISTS money_line_odds (
-  odds_id uuid references odds,
+  odds_id uuid references odds ON DELETE CASCADE,
   team_id integer references team,
   PRIMARY KEY (odds_id)
 );
 
 CREATE TABLE IF NOT EXISTS spread_odds (
-  odds_id uuid references odds,
+  odds_id uuid references odds ON DELETE CASCADE,
   team_id integer references team,
   spread float NOT NULL,
   PRIMARY KEY (odds_id)
 );
 
 CREATE TABLE IF NOT EXISTS total_odds (
-  odds_id uuid references odds,
+  odds_id uuid references odds ON DELETE CASCADE,
   total_score float NOT NULL,
   PRIMARY KEY (odds_id)
+);
+
+CREATE TABLE IF NOT EXISTS line_url_scheduling (
+  normalized_url varchar(2000) PRIMARY KEY,
+  sport_id integer NOT NULL REFERENCES sport,
+  vendor_id integer NOT NULL REFERENCES vendor,
+  event_time_epoch_ms bigint
 );

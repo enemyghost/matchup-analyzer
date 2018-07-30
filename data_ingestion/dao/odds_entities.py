@@ -1,8 +1,9 @@
 class OddsMeta:
-    def __init__(self, sportsbook, type, odds):
+    def __init__(self, sportsbook, type, odds, period = None):
         self.sportsbook = sportsbook
         self.type = type
         self.odds = odds
+        self.period = period
 
     def __eq__(self, other):
         return isinstance(other, self.__class__) and self.sportsbook == other.sportsbook and self.type == other.type and self.odds == other.odds
@@ -10,9 +11,12 @@ class OddsMeta:
     def __str__(self):
         return "sportsbook: {}, type: {}, odds: {}{}".format(self.sportsbook, self.type, '+' if self.odds > 0 else '', self.odds)
 
+    def specific_type(self):
+        return "_".join([self.period if self.period is not None else "", self.type, "_FAV" if self.odds < 0 else "DOG"])
+
 class SpreadOdds:
-    def __init__(self, sportsbook, odds, team, spread):
-        self.meta = OddsMeta(sportsbook, "SPREAD", odds)
+    def __init__(self, sportsbook, odds, team, spread, period = None):
+        self.meta = OddsMeta(sportsbook, "SPREAD", odds, period)
         self.team = team
         self.spread = spread
 
@@ -22,15 +26,9 @@ class SpreadOdds:
     def __str__(self):
         return "{{ {}, team: {}, spread: {}{} }}".format(self.meta, self.team, '+' if self.spread > 0 else '', self.spread)
 
-    def specific_type(self):
-        if self.spread >= 0:
-            return "SPREAD_FAV"
-        else:
-            return "SPREAD_DOG"
-
 class MoneyLineOdds:
-    def __init__(self, sportsbook, odds, team):
-        self.meta = OddsMeta(sportsbook, "MONEY_LINE", odds)
+    def __init__(self, sportsbook, odds, team, period = None):
+        self.meta = OddsMeta(sportsbook, "MONEY_LINE", odds, period)
         self.team = team
 
     def __eq__(self, other):
@@ -39,17 +37,11 @@ class MoneyLineOdds:
     def __str__(self):
         return "{{ {}, team: {} }}".format(self.meta, self.team)
 
-    def specific_type(self):
-        if self.meta.odds < 0:
-            return "MONEY_LINE_FAV"
-        else:
-            return "MONEY_LINE_DOG"
-
 class TotalOdds:
-    def __init__(self, sportsbook, type, odds, total):
+    def __init__(self, sportsbook, type, odds, total, period = None):
         if type not in ["UNDER", "OVER"]:
             raise ValueError("Total type must be UNDER or OVER")
-        self.meta = OddsMeta(sportsbook, type, odds)
+        self.meta = OddsMeta(sportsbook, type, odds, period)
         self.total = total
 
     def __eq__(self, other):
@@ -57,9 +49,6 @@ class TotalOdds:
 
     def __str__(self):
         return "{{ {}, total: {} }}".format(self.meta, self.total)
-
-    def specific_type(self):
-        return self.meta.type
 
 class OddsOffering:
     def __init__(self, timestamp, odds):
@@ -80,10 +69,10 @@ class OddsUpdateBuilder:
         if odds.meta.sportsbook not in self.odds_map:
             self.odds_map[odds.meta.sportsbook] = {}
         sb_map = self.odds_map[odds.meta.sportsbook]
-        if odds.specific_type() not in sb_map:
-            sb_map[odds.specific_type()] = [OddsOffering(timestamp, odds)]
+        if odds.meta.specific_type() not in sb_map:
+            sb_map[odds.meta.specific_type()] = [OddsOffering(timestamp, odds)]
         else:
-            odds_list = sb_map[odds.specific_type()]
+            odds_list = sb_map[odds.meta.specific_type()]
             if odds_list[-1].odds != odds:
                 odds_list.append(OddsOffering(timestamp, odds))
 
@@ -94,3 +83,10 @@ class OddsUpdateBuilder:
                 for odds in self.odds_map[sb][type]:
                     odds_list.append(odds)
         return odds_list
+
+class LineUrl(object):
+    def __init__(self, url, sport_id, vendor_id, event_time_epoch_ms = None):
+        self.url = url
+        self.sport_id = sport_id
+        self.vendor_id = vendor_id
+        self.event_time_epoch_ms = event_time_epoch_ms
