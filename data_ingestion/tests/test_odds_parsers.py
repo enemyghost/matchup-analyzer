@@ -39,6 +39,11 @@ class Test_odds_parsers(unittest.TestCase):
         actual = parser.convert_money_line_string_to_odds_object(money_line_string_no_odds, sportsbook)
         self.assertEqual(actual, None)
 
+    def test_money_line_no_odds(self):
+        money_line_string_no_odds = 'LAC'
+        actual = parser.convert_money_line_string_to_odds_object(money_line_string_no_odds, sportsbook)
+        self.assertEqual(actual, None)
+
     def test_spread_negative_int(self):
         spread_string_negative_int = 'LAC-3 -110'
         actual = parser.convert_spread_string_to_odds_object(spread_string_negative_int, sportsbook)
@@ -66,6 +71,11 @@ class Test_odds_parsers(unittest.TestCase):
 
     def test_spread_xx_xx(self):
         spread_string_xx_xx = 'PHIXX XX'
+        actual = parser.convert_spread_string_to_odds_object(spread_string_xx_xx, sportsbook)
+        self.assertEqual(actual, None)
+
+    def test_spread_xx_xx(self):
+        spread_string_xx_xx = 'PHI'
         actual = parser.convert_spread_string_to_odds_object(spread_string_xx_xx, sportsbook)
         self.assertEqual(actual, None)
 
@@ -108,6 +118,11 @@ class Test_odds_parsers(unittest.TestCase):
         period_pk = 'GNBPK'
         actual = parser.convert_period_to_odds_object(period_pk, sportsbook, period=2)
         self.assert_equality(actual, odds=-110, team="GNB", spread=0, sportsbook_input=sportsbook, period=2)
+
+    def test_period_no_data(self):
+        period_positive_decimal = 'DAL'
+        actual = parser.convert_period_to_odds_object(period_positive_decimal, sportsbook, period=1)
+        self.assertEqual(actual, None)
 
 if __name__ == '__main__':
      unittest.main()

@@ -94,10 +94,10 @@ class GameDataFactory(object):
         dog_spread =            convert_spread_string_to_odds_object(bet_row[5], sportsbook)
         total_over =            convert_total_over_to_odds_object(bet_row[6], sportsbook)
         total_under =           convert_total_under_to_odds_object(bet_row[7], sportsbook)
-        fav_fst_half =          convert_period_to_odds_object(bet_row[8], sportsbook, 1)
-        dog_fst_half =          convert_period_to_odds_object(bet_row[9], sportsbook, 1)
-        fav_snd_half =          convert_period_to_odds_object(bet_row[10], sportsbook, 2)
-        dog_snd_half =          convert_period_to_odds_object(bet_row[11], sportsbook, 2)
+        fav_fst_half =          convert_period_to_odds_object(bet_row[8], sportsbook, "1")
+        dog_fst_half =          convert_period_to_odds_object(bet_row[9], sportsbook, "1")
+        fav_snd_half =          convert_period_to_odds_object(bet_row[10], sportsbook, "2")
+        dog_snd_half =          convert_period_to_odds_object(bet_row[11], sportsbook, "2")
 
         list_of_odds = [fav_money_line, dog_money_line, fav_spread, dog_spread,
                         total_over, total_under, fav_fst_half, dog_fst_half,
@@ -158,9 +158,12 @@ def is_deepest_table(table, html_tag, class_dict):
     return False
 
 money_line_regx = re.compile(r'^([A-Z]{3})\s?([\+\-]\d+|XX)$')
+spread_regx     = re.compile(r'^([A-Z]{3})(PK|XX|[\+\-]?\d+\.?\d?)\s*(XX|[\-\+]\d+)$')
+total_regx      = re.compile(r'^(\d+\.?\d|XX)\s*([\-\+]\d+|XX)$')
+period_regx       = re.compile(r'^([A-Z]{3})(PK|XX|[\+\-]\d+\.?\d?)$')
 
 def convert_money_line_string_to_odds_object(string, sportsbook):
-    if string == '': #Known no-data pattern
+    if len(string) <= 3: #Known no odds pattern
         return None
     try:
         team_symbol, odds = re.findall(money_line_regx, string)[0]
@@ -171,10 +174,8 @@ def convert_money_line_string_to_odds_object(string, sportsbook):
     except:
         raise ValueError("String <{}> did not match type money_line as expected".format(string))
 
-spread_regx     = re.compile(r'^([A-Z]{3})(PK|XX|[\+\-]?\d+\.?\d?)\s*(XX|[\-\+]\d+)$')
-
 def convert_spread_string_to_odds_object(string, sportsbook):
-    if string == '': #Known no-data pattern
+    if len(string) <= 3:
         return None
     try:
         team_symbol, spread, odds = re.findall(spread_regx, string)[0]
@@ -186,8 +187,6 @@ def convert_spread_string_to_odds_object(string, sportsbook):
         return odds_entities.SpreadOdds(sportsbook, int(odds), team_symbol, float(spread))
     except:
         raise ValueError("String <{}> did not match type spread as expected".format(string))
-
-total_regx      = re.compile(r'^(\d+\.?\d|XX)\s*([\-\+]\d+|XX)$')
 
 def convert_total_over_to_odds_object(string, sportsbook):
     if string == '': #Known no-data pattern
@@ -213,10 +212,8 @@ def convert_total_under_to_odds_object(string, sportsbook):
     except:
         raise ValueError("String <{}> did not match type total_under as expected".format(string))
 
-period_regx       = re.compile(r'^([A-Z]{3})(PK|XX|[\+\-]\d+\.?\d?)$')
-
 def convert_period_to_odds_object(string, sportsbook, period):
-    if string == '': #Known no-data pattern
+    if len(string) <= 3:
         return None
     try:
         team_symbol, spread = re.findall(period_regx, string)[0]
@@ -228,7 +225,6 @@ def convert_period_to_odds_object(string, sportsbook, period):
         return odds_entities.SpreadOdds(sportsbook, -110, team_symbol, float(spread), period)
     except:
         raise ValueError("String <{}> did not match type period as expected".format(string))
-
 
 def convert_game_datetime_string_to_timestamp(date_str, time_str):
     """Converts the game date/time string into a timestamp and datetime object"""
