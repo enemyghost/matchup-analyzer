@@ -34,7 +34,7 @@ ON CONFLICT DO NOTHING;
 INSERT INTO sportsbook (sportsbook_id, sportsbook_name) VALUES
   (1, 'VI Consensus'),
   (2, 'Atlantis'),
-  (3, 'Caesars/Harrah''s),
+  (3, 'Caesars/Harrah''s'),
   (4, 'CG Technology'),
   (5, 'Coasts'),
   (6, 'Golden Nugget'),

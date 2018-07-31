@@ -88,16 +88,16 @@ class GameDataFactory(object):
         snapshot_date_str = bet_row[0]
         snapshot_time_str = bet_row[1]
         snapshot_timestamp_ms = convert_row_snapshot_datetime_string_to_timestamps(date_str=snapshot_date_str, time_str=snapshot_time_str, game_datetime_obj=game_datetime_obj)
-        fav_money_line =        convert_string_odds_to_odds_object(bet_row[2], sportsbook, "money_line")
-        dog_money_line =        convert_string_odds_to_odds_object(bet_row[3], sportsbook, "money_line")
-        fav_spread =            convert_string_odds_to_odds_object(bet_row[4], sportsbook, "spread")
-        dog_spread =            convert_string_odds_to_odds_object(bet_row[5], sportsbook, "spread")
-        total_over =            convert_string_odds_to_odds_object(bet_row[6], sportsbook, "total_over")
-        total_under =           convert_string_odds_to_odds_object(bet_row[7], sportsbook, "total_under")
-        fav_fst_half =          convert_string_odds_to_odds_object(bet_row[8], sportsbook, "half")
-        dog_fst_half =          convert_string_odds_to_odds_object(bet_row[9], sportsbook, "half")
-        fav_snd_half =          convert_string_odds_to_odds_object(bet_row[10], sportsbook, "half")
-        dog_snd_half =          convert_string_odds_to_odds_object(bet_row[11], sportsbook, "half")
+        fav_money_line =        convert_money_line_string_to_odds_object(bet_row[2], sportsbook)
+        dog_money_line =        convert_money_line_string_to_odds_object(bet_row[3], sportsbook)
+        fav_spread =            convert_spread_string_to_odds_object(bet_row[4], sportsbook)
+        dog_spread =            convert_spread_string_to_odds_object(bet_row[5], sportsbook)
+        total_over =            convert_total_over_to_odds_object(bet_row[6], sportsbook)
+        total_under =           convert_total_under_to_odds_object(bet_row[7], sportsbook)
+        fav_fst_half =          convert_period_to_odds_object(bet_row[8], sportsbook, 1)
+        dog_fst_half =          convert_period_to_odds_object(bet_row[9], sportsbook, 1)
+        fav_snd_half =          convert_period_to_odds_object(bet_row[10], sportsbook, 2)
+        dog_snd_half =          convert_period_to_odds_object(bet_row[11], sportsbook, 2)
 
         list_of_odds = [fav_money_line, dog_money_line, fav_spread, dog_spread,
                         total_over, total_under, fav_fst_half, dog_fst_half,
@@ -108,7 +108,7 @@ class GameDataFactory(object):
 def extract_game_meta_data(table_list):
     """Extracts game meta data from heads of tables, returns tuple"""
     away_team, home_team = table_list[0][0][0].split(' @ ')
-    game_time_str = table_list[1][1][0][10:]
+    game_time_str = table_list[1][1][0][10:] #Removes prefix before the date/time string
     game_date_str = table_list[1][0][0][10:]
     game_timestamp_ms, game_datetime_obj = convert_game_datetime_string_to_timestamp(date_str=game_date_str, time_str=game_time_str)
     return (home_team, away_team, game_timestamp_ms, game_datetime_obj)
@@ -125,7 +125,7 @@ class SoupFactory(object):
 
 class LineTableParser(object):
     """Parses html soup from VI line table pages, strips values from the table and
-        returns them to an array of table contents"""
+        returns them as an array of table contents"""
 
     def __init__(self, html_tag='tbody', class_dict={}, parser='lxml'):
         self.html_tag = html_tag
@@ -134,11 +134,11 @@ class LineTableParser(object):
 
     def get_tables(self, raw_html):
         """Takes raw_html from line movement pages, strips all data from table
-            and returns an array of table data in strings"""
+            and returns an array of table data strings"""
         soup = self.soup_factory.get(raw_html)
         find_tables = soup.find_all(self.html_tag, self.class_dict)
-        if find_tables == 0:
-            raise ValueError("The passed html is empty or not the expected format, the first 300 lines are:%s" % raw_html[:300])
+        if len(find_tables) == 0:
+            raise ValueError("The passed html is empty or not the expected format, the first 300 lines are: {}".format(raw_html[:300]))
         table_list = []
 
         for table in find_tables:
@@ -158,64 +158,77 @@ def is_deepest_table(table, html_tag, class_dict):
     return False
 
 money_line_regx = re.compile(r'^([A-Z]{3})\s?([\+\-]\d+|XX)$')
-spread_regx     = re.compile(r'^([A-Z]{3})|(PK|XX|[\+\-]?\d+\.?\d?)\s*(XX|[\-\+]\d+)$')
-total_regx      = re.compile(r'^(\d+\.?\d|XX)\s*([\-\+]\d+|XX)$')
-half_regx       = re.compile(r'^([A-Z]{3})(PK|XX|[\+\-]\d+\.?\d?)$')
 
-def convert_string_odds_to_odds_object(string, sportsbook, type):
-    """Takes bet strings and regex matches to capture the relevent data,
-        returns OddsOffering object, or None if the string is blank, or contains
-        a invalid bet/odds string such as XX
-        @param string: Odds line strings
-        @param sportsbook: The sportsbook offering the odds
-        @param type: The bet type"""
-
-    if string == '':
+def convert_money_line_string_to_odds_object(string, sportsbook):
+    if string == '': #Known no-data pattern
         return None
-
-    if type == "money_line":
+    try:
         team_symbol, odds = re.findall(money_line_regx, string)[0]
-        if odds == 'XX':
+        type = 'money_line'
+        if odds == 'XX': #Known no-data pattern
             return None
         return odds_entities.MoneyLineOdds(sportsbook, int(odds), team_symbol)
+    except:
+        raise ValueError("String <{}> did not match type money_line as expected".format(string))
 
-    elif type == "spread":
+spread_regx     = re.compile(r'^([A-Z]{3})(PK|XX|[\+\-]?\d+\.?\d?)\s*(XX|[\-\+]\d+)$')
+
+def convert_spread_string_to_odds_object(string, sportsbook):
+    if string == '': #Known no-data pattern
+        return None
+    try:
         team_symbol, spread, odds = re.findall(spread_regx, string)[0]
-        if spread in ['', None, 'XX'] or odds in ['', None, 'XX']:
+        type = 'spread'
+        if spread in ['', None, 'XX'] or odds in ['', None, 'XX']: #Known no-data pattern
             return None
         if spread == 'PK':
             spread = 0
-
         return odds_entities.SpreadOdds(sportsbook, int(odds), team_symbol, float(spread))
+    except:
+        raise ValueError("String <{}> did not match type spread as expected".format(string))
 
-    elif type == "total_over":
+total_regx      = re.compile(r'^(\d+\.?\d|XX)\s*([\-\+]\d+|XX)$')
+
+def convert_total_over_to_odds_object(string, sportsbook):
+    if string == '': #Known no-data pattern
+        return None
+    try:
         total, odds = re.findall(total_regx, string)[0]
         type = "OVER"
-        if total == 'XX' or odds == 'XX':
+        if total == 'XX' or odds == 'XX': #Known no-data pattern
             return None
         return odds_entities.TotalOdds(sportsbook, type, int(odds), float(total))
+    except:
+        raise ValueError("String <{}> did not match type total_over as expected".format(string))
 
-    elif type == "total_under":
+def convert_total_under_to_odds_object(string, sportsbook):
+    if string == '': #Known no-data pattern
+        return None
+    try:
         total, odds = re.findall(total_regx, string)[0]
         type = "UNDER"
-        if total == 'XX' or odds == 'XX':
+        if total == 'XX' or odds == 'XX': #Known no-data pattern
             return None
         return odds_entities.TotalOdds(sportsbook, type, int(odds), float(total))
+    except:
+        raise ValueError("String <{}> did not match type total_under as expected".format(string))
 
-    elif type == "half":
-        return None #temp fix until half bet types handled in odds_entities
+period_regx       = re.compile(r'^([A-Z]{3})(PK|XX|[\+\-]\d+\.?\d?)$')
 
-        team_symbol, odds = re.findall(half_regx, string)[0]
-        type = "half"
-        if odds == 'XX':
+def convert_period_to_odds_object(string, sportsbook, period):
+    if string == '': #Known no-data pattern
+        return None
+    try:
+        team_symbol, spread = re.findall(period_regx, string)[0]
+        type = "PERIOD"
+        if spread == 'XX': #Known no-data pattern
             return None
-        if odds == 'PK':
-            odds = 0
+        if spread == 'PK':
+            spread = 0
+        return odds_entities.SpreadOdds(sportsbook, -110, team_symbol, float(spread), period)
+    except:
+        raise ValueError("String <{}> did not match type period as expected".format(string))
 
-        return odds_entities.MoneyLineOdds(sportsbook, float(odds), team_symbol)
-
-    else:
-        raise ValueError("No matching bet type for %s" % type)
 
 def convert_game_datetime_string_to_timestamp(date_str, time_str):
     """Converts the game date/time string into a timestamp and datetime object"""

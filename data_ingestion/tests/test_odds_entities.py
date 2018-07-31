@@ -5,6 +5,7 @@ from dao import odds_entities as oddities
 
 class Test_add_odds(unittest.TestCase):
     def test(self):
+
         #Exact duplicate data (Only one should be added)
         odds1 = (1527129122, oddities.MoneyLineOdds("Caesars", -150, "CLE"))
         odds2 = (1527129122, oddities.MoneyLineOdds("Caesars", -150, "CLE"))

@@ -91,8 +91,8 @@ CREATE TABLE IF NOT EXISTS odds (
   game_id uuid REFERENCES game,
   offered_time_epoch_ms bigint NOT NULL,
   odds integer NOT NULL,
-  half integer DEFAULT NULL,
-  UNIQUE (odds_type_id, vendor_id, sportsbook_id, game_id, half, offered_time_epoch_ms)
+  period varchar DEFAULT NULL,
+  UNIQUE (odds_type_id, vendor_id, sportsbook_id, game_id, period, offered_time_epoch_ms)
 );
 
 CREATE TABLE IF NOT EXISTS money_line_odds (

@@ -115,7 +115,7 @@ def insert_money_line_odds(cur, odds_id, vendor_id, sportsbook_id, game_id, offe
     cur.execute(odds_query, (odds_id, 1, vendor_id, sportsbook_id, game_id, offered_time_epoch_ms, odds))
     cur.execute(ml_odds_query, (odds_id, team_id))
     if (period is not None and (period == 1 or period == 2)):
-        cur.execute("UPDATE odds SET period = %s WHERE odds_id = %s", (period, odds_id))
+        cur.execute("UPDATE odds SET period = '%s' WHERE odds_id = %s", (period, odds_id))
 
 def insert_spread_odds(cur, odds_id, vendor_id, sportsbook_id, game_id, offered_time_epoch_ms, team_id, spread, odds, period = None):
     odds_query = "INSERT INTO odds (odds_id, odds_type_id, vendor_id, sportsbook_id, game_id, offered_time_epoch_ms, odds) VALUES (%s, %s, %s, %s, %s, %s, %s) ON CONFLICT (odds_id) DO UPDATE SET odds = EXCLUDED.odds;"
@@ -123,7 +123,7 @@ def insert_spread_odds(cur, odds_id, vendor_id, sportsbook_id, game_id, offered_
     cur.execute(odds_query, (odds_id, 2, vendor_id, sportsbook_id, game_id, offered_time_epoch_ms, odds))
     cur.execute(spread_odds_query, (odds_id, team_id, spread))
     if (period is not None and (period == 1 or period == 2)):
-        cur.execute("UPDATE odds SET period = %s WHERE odds_id = %s", (period, odds_id))
+        cur.execute("UPDATE odds SET period = '%s' WHERE odds_id = %s", (period, odds_id))
 
 def insert_total_odds(cur, odds_id, vendor_id, sportsbook_id, game_id, offered_time_epoch_ms, total_score, odds, isUnder, period = None):
     odds_query = "INSERT INTO odds (odds_id, odds_type_id, vendor_id, sportsbook_id, game_id, offered_time_epoch_ms, odds) VALUES (%s, %s, %s, %s, %s, %s, %s) ON CONFLICT (odds_id) DO UPDATE SET odds = EXCLUDED.odds;"
@@ -131,7 +131,7 @@ def insert_total_odds(cur, odds_id, vendor_id, sportsbook_id, game_id, offered_t
     cur.execute(odds_query, (odds_id, 3 if isUnder else 4, vendor_id, sportsbook_id, game_id, offered_time_epoch_ms, odds))
     cur.execute(total_odds_query, (odds_id, total_score))
     if (period is not None and (period == 1 or period == 2)):
-        cur.execute("UPDATE odds SET period = %s WHERE odds_id = %s", (period, odds_id))
+        cur.execute("UPDATE odds SET period = '%s' WHERE odds_id = %s", (period, odds_id))
 
 def get_sportsbook_id_for_alias(sportsbook_alias, vendor_id):
     with OddsConnection() as conn:
