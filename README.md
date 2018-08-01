@@ -1,2 +1,2 @@
 # matchup-analyzer
-Analyze matchups based on spreads, previous meetings, and other things
+Analyze matchups based on spreads, previous meetings, and other things.

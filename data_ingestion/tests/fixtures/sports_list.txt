@@ -1,0 +1,6 @@
+mlb
+nba
+nfl
+nhl
+college-football
+college-basketball
