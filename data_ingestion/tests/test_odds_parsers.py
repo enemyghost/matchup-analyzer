@@ -18,7 +18,6 @@ class Test_odds_parsers(unittest.TestCase):
         self.assertEqual(actual.meta.sportsbook, sportsbook_input)
         self.assertEqual(actual.meta.period, period)
 
-
     def test_money_line_blank_string(self):
         blank_string = ''
         actual = parser.convert_money_line_string_to_odds_object(blank_string, sportsbook)
