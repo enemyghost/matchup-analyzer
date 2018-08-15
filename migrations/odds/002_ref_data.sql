@@ -393,7 +393,7 @@ INSERT INTO team_alias_by_vendor (team_alias_id, vendor_id) VALUES
   (86, 1),
   (87, 1),
   (88, 1),
-  (89, 1),
+  (89, 1),y
   (90, 1),
   (91, 1)
 ON CONFLICT DO NOTHING;
